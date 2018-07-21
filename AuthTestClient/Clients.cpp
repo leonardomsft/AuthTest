@@ -268,7 +268,7 @@ BOOL ClientConn::Authenticate()
 	DWORD			cbIn = 0;
 
 
-	//for credssp
+	//for credssp or Explicit Credentials
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
 	PSCHANNEL_CRED				pSchannelCred = NULL;
 	PCREDSSP_CRED				pCred = NULL;
@@ -347,7 +347,7 @@ BOOL ClientConn::Authenticate()
 	}//if credssp
 
 
-	 //Acquire Credentials
+	//Acquire Credentials
 
 	ss = AcquireCredentialsHandle(
 		NULL,

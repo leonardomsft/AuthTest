@@ -7,7 +7,7 @@
 //Globals
 SOCKET Connections[MAXWORD];
 int ConnectionCount = 0;
-int MaxConnections = 100;
+int MaxConnections = 1000;
 BOOL fVerbose = 0;
 const WCHAR * szTestType[] = { L"Invalid", L"Basic", L"Advanced" };
 
