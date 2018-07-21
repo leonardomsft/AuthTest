@@ -144,7 +144,7 @@ int wmain(int argc, WCHAR * argv[])
 
 		if (NULL == NewConnection)
 		{
-			wprintf(L"Client %d: accept failed.\n", i);
+			wprintf(L"Client %d: accept failed. Abort\n", i);
 
 			break;
 		}
@@ -158,41 +158,48 @@ int wmain(int argc, WCHAR * argv[])
 		if (ConnectionCount > MaxConnections)
 		{
 
-			wprintf(L"Client %d: Max server connections reached. Abort.\n", i);
+			wprintf(L"Client %d: Max server connections reached. Connection rejected.\n", i);
 
 			shutdown(NewConnection, SD_BOTH);
 
 			closesocket(NewConnection);
 
-			break;
+		}
+		else
+		{
+			wprintf(L"------------------- Client %d connected -------------------\n", i);
+
+
+			//preserve the connection in the array
+
+			Connections[i] = NewConnection;
+
+			//Handle each client in a separate thread, which is acceptable design for a test tool
+
+			NewThread = CreateThread(
+				NULL,
+				NULL,
+				(LPTHREAD_START_ROUTINE)ClientHandlerThread,
+				(LPVOID)(i),
+				NULL,
+				NULL);
+
+			if (NULL == NewThread) {
+
+				wprintf(L"CreateThread failed: %u\n", GetLastError());
+
+			}
+
+
+			CloseHandle(NewThread);
 
 		}
 
-		wprintf(L"------------------- Client %d connected -------------------\n", i);
 
-
-		//preserve the connection in the array
-
-		Connections[i] = NewConnection;
-
-		//Handle each client in a separate thread, which is acceptable design for a test tool
-
-		NewThread = CreateThread(
-			NULL,
-			NULL,
-			(LPTHREAD_START_ROUTINE)ClientHandlerThread,
-			(LPVOID)(i),
-			NULL,
-			NULL);
-
-		if (NULL == NewThread) {
-
-			wprintf(L"CreateThread failed: %u\n", GetLastError());
-
+		if (i == MAXDWORD)
+		{
+			i = 0;
 		}
-
-		CloseHandle(NewThread);
-
 
 	}// end loop
 
