@@ -268,7 +268,6 @@ BOOL ClientConn::Authenticate()
 
 	TimeStamp		Lifetime;
 	BOOL			fDone = false;
-	BOOL			fSuccess = false;
 	DWORD			cbOut = 0;
 	DWORD			cbIn = 0;
 	PBYTE			pInBuf = nullptr;
@@ -417,7 +416,7 @@ BOOL ClientConn::Authenticate()
 			{
 				//The error has already been captured. Just return.
 
-				goto CleanUp;
+				break;
 			}
 
 		}
@@ -433,7 +432,7 @@ BOOL ClientConn::Authenticate()
 		{
 			//The error has already been captured. Just return.
 
-			goto CleanUp;
+			break;
 		}
 
 		fNewConversation = false;
@@ -445,11 +444,11 @@ BOOL ClientConn::Authenticate()
 		{
 			//The error has already been captured. Just return.
 
-			goto CleanUp;
+			break;
 		}
 	}
 
-	fSuccess = true;
+
 
 CleanUp:
 
@@ -483,7 +482,7 @@ CleanUp:
 	//Release context buffer
 	FreeContextBuffer(pkgInfo);
 
-	return fSuccess;
+	return fDone;
 }
 
 BOOL ClientConn::GenClientContext(

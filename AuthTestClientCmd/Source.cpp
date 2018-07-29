@@ -7,7 +7,6 @@
 #include "Clients.h"
 
 // Globals
-//int cbMaxMessage = 12000;
 BOOL fVerbose = 0;
 
 
@@ -194,13 +193,15 @@ BOOL ClientHandlerThread(LPVOID _param)
 	TestType TestType = Param->TestType;
 
 
+
+
 	//
 	// Connect to the server
 	//
 
 	if (!pclient->Connect())
 	{
-		wprintf(L"Client %d: Error Connecting. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error Connecting. Aborting.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -212,7 +213,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->SendTestType(TestType))
 	{
-		wprintf(L"Client %d: Error sending TestType. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error sending TestType. Aborting.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -225,7 +226,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->SendPackageName())
 	{
-		wprintf(L"Client %d: Error sending PackageName. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error sending PackageName. Aborting.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -239,20 +240,20 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->Authenticate())
 	{
-		wprintf(L"Client %d: Error 0x%08x at Authenticate -> %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
+		wprintf(L"Client %d: Test Failed. Error 0x%08x at Authenticate -> %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
 
 		//Allow delegating fresh credentials
 		if (pclient->dwErrorCode == SEC_E_DELEGATION_POLICY &&
 			!_wcsicmp(pclient->pkgInfo->Name, L"CredSSP"))
 		{
-			wprintf(L"Client %d: Check CredSSP delegation policy at Computer Configuration\\Administrative Templates\\System\\Credential Delegation\\Allow delegating fresh credentials.\n", Param->iIndex);
+			wprintf(L"Client %d: Check CredSSP delegation policy 'Allow delegating fresh credentials'.\n", Param->iIndex);
 		}
 
 		//Allow delegating fresh credentials with NTLM
 		if (pclient->dwErrorCode == SEC_E_POLICY_NLTM_ONLY &&
 			!_wcsicmp(pclient->pkgInfo->Name, L"CredSSP"))
 		{
-			wprintf(L"Client %d: Check CredSSP delegation policy at Computer Configuration\\Administrative Templates\\System\\Credential Delegation\\Allow delegating fresh credentials with NTLM-only server authentication.\n", Param->iIndex);
+			wprintf(L"Client %d: Check CredSSP delegation policy 'Allow delegating fresh credentials with NTLM-only'.\n", Param->iIndex);
 		}
 
 
@@ -268,7 +269,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->GetContextInfo())
 	{
-		wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. GetContextInfo failed. Aborting.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -290,6 +291,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (TestType == Basic)
 	{
+		wprintf(L"Client %d: Basic test completed successfully!\n", Param->iIndex);
+
 		goto cleanup;
 	}
 
@@ -300,7 +303,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->GetContextSizes())
 	{
-		wprintf(L"Client %d: GetContextSizes failed. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. GetContextSizes failed. Aborting.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -314,11 +317,31 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->SecureReceive(pMessage, cbMessage))
 	{
-		wprintf(L"Client %d: SecureReceive failed. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Advanced test failed.  Error 0x%08x at SecureReceive -> %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
 
 		goto cleanup;
 	}
 	wprintf(L"Client %d: SecureReceive succeess! Message: %s\n", Param->iIndex, pMessage);
+
+
+	//
+	//verify if the beginning of the decrypted message matches what we expect
+	//
+
+	if (wcsncmp(pMessage, L"The time now is", 15) != NULL)
+	{
+		wprintf(L"Client %d: Advanced test Failed. Decrypted message not recognized. Error 0x%08x at %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
+		
+		goto cleanup;
+	}
+	else
+	{
+		wprintf(L"Client %d: Impersonation and Encryption success!\n", Param->iIndex);
+	}
+
+
+	wprintf(L"Client %d: Advanced test completed successfully!\n", Param->iIndex);
+
 
 
 cleanup:

@@ -1,7 +1,7 @@
 #pragma once
 
 extern SOCKET Connections[MAXWORD];
-extern int ConnectionCount;
+extern long ConnectionCount;
 extern BOOL fVerbose;
 
 #define SEC_SUCCESS(Status) ((Status) >= 0)

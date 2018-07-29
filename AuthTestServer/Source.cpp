@@ -6,7 +6,7 @@
 
 //Globals
 SOCKET Connections[MAXWORD];
-int ConnectionCount = 0;
+long ConnectionCount = 0;
 int MaxConnections = 1000;
 BOOL fVerbose = 0;
 const WCHAR * szTestType[] = { L"Invalid", L"Basic", L"Advanced" };
@@ -134,7 +134,7 @@ int wmain(int argc, WCHAR * argv[])
 	SOCKET NewConnection;
 	HANDLE NewThread;
 
-	for (DWORD i = 0; i < MAXDWORD; i++)
+	for (DWORD i = 0; i <= MAXWORD; i++)
 	{
 
 		//
@@ -149,24 +149,22 @@ int wmain(int argc, WCHAR * argv[])
 			break;
 		}
 
-		ConnectionCount += 1;
-
-
 		//
 		//  Bail on MaxConnections
 		//
 		if (ConnectionCount > MaxConnections)
 		{
-
+			
 			wprintf(L"Client %d: Max server connections reached. Connection rejected.\n", i);
 
 			shutdown(NewConnection, SD_BOTH);
 
 			closesocket(NewConnection);
-
 		}
 		else
 		{
+			InterlockedIncrement(&ConnectionCount);
+
 			wprintf(L"------------------- Client %d connected -------------------\n", i);
 
 
@@ -196,7 +194,7 @@ int wmain(int argc, WCHAR * argv[])
 		}
 
 
-		if (i == MAXDWORD)
+		if (i == MAXWORD)
 		{
 			i = 0;
 		}

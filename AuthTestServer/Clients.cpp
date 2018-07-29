@@ -16,6 +16,8 @@ ClientConn::~ClientConn()
 
 	closesocket(Connections[iIndex]);
 
+	InterlockedDecrement(&ConnectionCount);
+
 	wprintf(L"Client %d: Disconnected.\n", iIndex);
 
 	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
@@ -25,8 +27,6 @@ ClientConn::~ClientConn()
 		DeleteSecurityContext(&hctxt);
 	}
 
-
-	ConnectionCount -= 1;
 }
 
 
