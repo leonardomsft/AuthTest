@@ -134,7 +134,7 @@ int wmain(int argc, WCHAR * argv[])
 	SOCKET NewConnection;
 	HANDLE NewThread;
 
-	for (DWORD i = 0; i <= MAXWORD; i++)
+	for (DWORD i = 0; i <= MAXWORD - 1; i++)
 	{
 
 		//
@@ -163,9 +163,12 @@ int wmain(int argc, WCHAR * argv[])
 		}
 		else
 		{
+			wprintf(L"------------------- Client %d connected -------------------\n", i);
+
 			InterlockedIncrement(&ConnectionCount);
 
-			wprintf(L"------------------- Client %d connected -------------------\n", i);
+			wprintf(L"ConnectionCount Incremented to: %d\n", ConnectionCount);
+
 
 
 			//preserve the connection in the array
@@ -194,7 +197,7 @@ int wmain(int argc, WCHAR * argv[])
 		}
 
 
-		if (i == MAXWORD)
+		if (i == MAXWORD - 1)
 		{
 			i = 0;
 		}
