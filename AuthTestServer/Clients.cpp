@@ -18,7 +18,7 @@ ClientConn::~ClientConn()
 
 	InterlockedDecrement(&ConnectionCount);
 
-	wprintf(L"ConnectionCount Decremented to: %d\n", ConnectionCount);
+	//wprintf(L"ConnectionCount Decremented to: %d\n", ConnectionCount);
 
 	wprintf(L"Client %d: Disconnected.\n", iIndex);
 

@@ -219,7 +219,6 @@ BOOL ClientConn::GetContextInfo()
 			&hctxt,
 			SECPKG_ATTR_NEGOTIATION_PACKAGE,
 			&SecPackageInfo);
-
 	}
 	else
 	{
@@ -235,6 +234,19 @@ BOOL ClientConn::GetContextInfo()
 
 		return false;
 	}
+
+	ss = QueryContextAttributes(
+		&hctxt,
+		SECPKG_ATTR_KEY_INFO,
+		&SecPackageKeyInfo);
+
+	if (!SEC_SUCCESS(ss))
+	{
+		LogError(ss, L"QueryContextAttributes, SECPKG_ATTR_KEY_INFO");
+
+		return false;
+	}
+
 
 	return true;
 
@@ -929,4 +941,24 @@ void ClientConn::LogError(LONG dwError, LPCWSTR pszErrorLocation)
 	wcscpy_s(szErrorLocation, 255, pszErrorLocation);
 
 	dwErrorCode = dwError;
+
+	LPWSTR pszErrorMessage = NULL;
+
+	int iRet = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 
+							NULL,
+							dwError,
+							NULL,
+							(LPWSTR)&pszErrorMessage,
+							NULL,
+							NULL);
+
+	if (iRet != NULL)
+	{
+		wcscpy_s(szErrorMessage, iRet + 1, pszErrorMessage);
+
+		LocalFree(pszErrorMessage);
+
+	}
+	
+
 }

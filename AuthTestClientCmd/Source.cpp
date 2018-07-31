@@ -201,7 +201,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->Connect())
 	{
-		wprintf(L"Client %d: Test Failed. Error Connecting. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error Connecting: %d. Aborting.\n", Param->iIndex, pclient->dwErrorCode);
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
@@ -213,7 +214,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->SendTestType(TestType))
 	{
-		wprintf(L"Client %d: Test Failed. Error sending TestType. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error sending TestType: %d. Aborting.\n", Param->iIndex, pclient->dwErrorCode);
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
@@ -226,7 +228,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->SendPackageName())
 	{
-		wprintf(L"Client %d: Test Failed. Error sending PackageName. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. Error sending PackageName: %d. Aborting.\n", Param->iIndex, pclient->dwErrorCode);
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
@@ -241,6 +244,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 	if (!pclient->Authenticate())
 	{
 		wprintf(L"Client %d: Test Failed. Error 0x%08x at Authenticate -> %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
+
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		//Allow delegating fresh credentials
 		if (pclient->dwErrorCode == SEC_E_DELEGATION_POLICY &&
@@ -264,12 +269,14 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 
 	//
-	//Prints the Package selected during authentication
+	//Prints the Package selected during authentication, Encryption Algorithm, and key size
 	//
 
 	if (!pclient->GetContextInfo())
 	{
-		wprintf(L"Client %d: Test Failed. GetContextInfo failed. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. GetContextInfo failed: 0x%08x.  Aborting.\n", Param->iIndex, pclient->dwErrorCode);
+		
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
@@ -283,6 +290,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 	{
 		wprintf(L"Client %d: Package selected: %s\n", Param->iIndex, pclient->SecPkgNegInfo.PackageInfo->Name);
 	}
+	wprintf(L"Client %d: Encryption Algorithm: %s %d bits, Signature Algorithm: %s\n", Param->iIndex, pclient->SecPackageKeyInfo.sEncryptAlgorithmName, pclient->SecPackageKeyInfo.KeySize, pclient->SecPackageKeyInfo.sSignatureAlgorithmName);
 
 
 	//
@@ -303,11 +311,13 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (!pclient->GetContextSizes())
 	{
-		wprintf(L"Client %d: Test Failed. GetContextSizes failed. Aborting.\n", Param->iIndex);
+		wprintf(L"Client %d: Test Failed. GetContextSizes failed: 0x%08x. Aborting.\n", Param->iIndex, pclient->dwErrorCode);
+
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
-	wprintf(L"Client %d: Package MaxSignature size: %d, SecurityTrailer size: %d\n", Param->iIndex, pclient->SecPkgContextSizes.cbMaxSignature, pclient->SecPkgContextSizes.cbSecurityTrailer);
+	wprintf(L"Client %d: GetContextSizes success\n", Param->iIndex);
 
 
 
@@ -318,6 +328,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 	if (!pclient->SecureReceive(pMessage, cbMessage))
 	{
 		wprintf(L"Client %d: Advanced test failed.  Error 0x%08x at SecureReceive -> %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
+
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
 	}
@@ -332,6 +344,8 @@ BOOL ClientHandlerThread(LPVOID _param)
 	{
 		wprintf(L"Client %d: Advanced test Failed. Decrypted message not recognized. Error 0x%08x at %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
 		
+		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
+
 		goto cleanup;
 	}
 	else
@@ -341,6 +355,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 
 	wprintf(L"Client %d: Advanced test completed successfully!\n", Param->iIndex);
+
 
 
 

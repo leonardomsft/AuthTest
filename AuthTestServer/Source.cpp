@@ -167,9 +167,7 @@ int wmain(int argc, WCHAR * argv[])
 
 			InterlockedIncrement(&ConnectionCount);
 
-			wprintf(L"ConnectionCount Incremented to: %d\n", ConnectionCount);
-
-
+			//wprintf(L"ConnectionCount Incremented to: %d\n", ConnectionCount);
 
 			//preserve the connection in the array
 

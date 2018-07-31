@@ -30,12 +30,13 @@ public:
 	PSecPkgInfo		pkgInfo;
 	SecPkgContext_NegotiationInfo SecPkgNegInfo;
 	SecPkgContext_PackageInfo SecPackageInfo;
+	SecPkgContext_KeyInfo SecPackageKeyInfo;
 	SecPkgContext_Sizes SecPkgContextSizes;
 
 	//Error handling
 	LONG	dwErrorCode;
 	WCHAR	szErrorLocation[255];
-	LPWSTR	szErrorMessage;
+	WCHAR	szErrorMessage[255];
 
 	ClientConn(int i, LPWSTR szServerName, int iDestPort, LPWSTR szTargetName, LPWSTR szPackageName);
 	~ClientConn();
