@@ -290,6 +290,8 @@ BOOL ClientHandlerThread(int index)
 		{
 			wprintf(L"Client %d: Package selected: %s\n", index, pclient->SecPkgNegInfo.PackageInfo->Name);
 		}
+		//Cleanup
+		FreeContextBuffer(pclient->SecPkgNegInfo.PackageInfo);
 
 
 
@@ -300,7 +302,7 @@ BOOL ClientHandlerThread(int index)
 		if (TestType == Basic)
 		{
 			wprintf(L"Client %d: Basic test completed successfully!\n", index);
-
+			
 			continue;
 		}
 

@@ -21,18 +21,11 @@ ClientConn::~ClientConn()
 	//wprintf(L"ConnectionCount Decremented to: %d\n", ConnectionCount);
 
 	wprintf(L"Client %d: Disconnected.\n", iIndex);
-
-	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
-
-	if (!fNewConversation)
-	{
-		DeleteSecurityContext(&hctxt);
-	}
-
 }
 
 BOOL ClientConn::Initialize()
 {
+
 	if (!fNewConversation)
 	{
 		DeleteSecurityContext(&hctxt);

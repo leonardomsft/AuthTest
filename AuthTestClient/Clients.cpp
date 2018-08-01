@@ -41,7 +41,7 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
+	//FreeContextBuffer(SecPkgNegInfo.PackageInfo);
 
 	if (!fNewConversation)
 	{
