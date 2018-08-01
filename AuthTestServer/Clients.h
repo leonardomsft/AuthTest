@@ -14,6 +14,7 @@ public:
 	SecPkgContext_PackageInfo SecPackageInfo;
 	SecPkgContext_Sizes SecPkgContextSizes;
 
+	BOOL Initialize();
 	BOOL ReceiveTestType(int * iTestType);
 	BOOL ReceivePackageName();
 	BOOL Authenticate();
@@ -27,8 +28,8 @@ public:
 	ClientConn(int i);
 	~ClientConn();
 
-private:
 
+private:
 	BOOL fNewConversation;
 
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);

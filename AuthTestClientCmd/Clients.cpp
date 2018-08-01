@@ -40,6 +40,21 @@ ClientConn::~ClientConn()
 }
 
 
+BOOL ClientConn::Initialize()
+{
+
+	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
+
+	if (!fNewConversation)
+	{
+		DeleteSecurityContext(&hctxt);
+
+		fNewConversation = true;
+	}
+
+	return true;
+}
+
 BOOL ClientConn::Connect()
 {
 	LONG iResult = 0;

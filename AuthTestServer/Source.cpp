@@ -217,118 +217,140 @@ BOOL ClientHandlerThread(int index)
 	int iTestType = 0;
 	TestType TestType;
 
-	//
-	//Receive the Test Type from the client
-	//
+	BOOL fSuccess;
 
-	if (!pclient->ReceiveTestType((int *)&TestType))
+	while (true)
 	{
-		wprintf(L"Client %d: Error receiving TestType. Aborting.\n", index);
 
-		goto cleanup;
-	}
-	wprintf(L"Client %d: TestType requested: %s\n", index, szTestType[TestType]);
+		//
+		//Initialize
+		//
 
-
-	//
-	//Receive the PackageName from the client
-	//
-
-	if (!pclient->ReceivePackageName())
-	{
-		wprintf(L"Client %d: Error receiving PackageName. Aborting.\n", index);
-
-		goto cleanup;
-	}
-	wprintf(L"Client %d: Package requested: %s\n", index, pclient->szPackageName);
+		if (pclient->Initialize())
+		{
+			wprintf(L"Client %d: Starting new test...\n", index);
+		}
 
 
-	//
-	//Authenticate the client
-	//
+		//
+		//Receive the Test Type from the client
+		//
 
-	if (!pclient->Authenticate())
-	{
-		wprintf(L"Client %d: Authentication Failed. Aborting.\n", index);
+		if (!pclient->ReceiveTestType((int *)&TestType))
+		{
+			wprintf(L"Client %d: A TestType was not received. Aborting.\n", index);
 
-		goto cleanup;
-	}
-	wprintf(L"Client %d: Authentication Success!\n", index);
-
-
-	//
-	//Prints the Package selected during authentication
-	//
-
-	if (!pclient->GetContextInfo())
-	{
-		wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
-
-		goto cleanup;
-	}
-
-	if (!_wcsicmp(pclient->szPackageName, L"CredSSP"))
-	{
-		wprintf(L"Client %d: Package selected: CredSSP over %s\n", index, pclient->SecPackageInfo.PackageInfo->Name);
-	}
-	else
-	{
-		wprintf(L"Client %d: Package selected: %s\n", index, pclient->SecPkgNegInfo.PackageInfo->Name);
-	}
+			goto cleanup;
+		}
+		wprintf(L"Client %d: TestType requested: %s\n", index, szTestType[TestType]);
 
 
+		//
+		//Receive the PackageName from the client
+		//
 
-	//
-	//  Wrap if Basic
-	//
+		if (!pclient->ReceivePackageName())
+		{
+			wprintf(L"Client %d: Error receiving PackageName. Aborting.\n", index);
 
-	if (TestType == Basic)
-	{
-		goto cleanup;
-	}
+			goto cleanup;
+		}
+		wprintf(L"Client %d: Package requested: %s\n", index, pclient->szPackageName);
 
 
-	//
-	//Obtain the size of signature and the encryption trailer blocks
-	//
+		//
+		//Authenticate the client
+		//
 
-	if (!pclient->GetContextSizes())
-	{
-		wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
+		if (!pclient->Authenticate())
+		{
+			wprintf(L"Client %d: Authentication Failed. Aborting.\n", index);
 
-		goto cleanup;
-	}
-	if (fVerbose)
+			continue;
+		}
+		wprintf(L"Client %d: Authentication Success!\n", index);
+
+
+		//
+		//Prints the Package selected during authentication
+		//
+
+		if (!pclient->GetContextInfo())
+		{
+			wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
+
+			continue;
+		}
+
+		if (!_wcsicmp(pclient->szPackageName, L"CredSSP"))
+		{
+			wprintf(L"Client %d: Package selected: CredSSP over %s\n", index, pclient->SecPackageInfo.PackageInfo->Name);
+		}
+		else
+		{
+			wprintf(L"Client %d: Package selected: %s\n", index, pclient->SecPkgNegInfo.PackageInfo->Name);
+		}
+
+
+
+		//
+		//  Wrap if Basic
+		//
+
+		if (TestType == Basic)
+		{
+			wprintf(L"Client %d: Basic test completed successfully!\n", index);
+
+			continue;
+		}
+
+
+		//
+		//Obtain the size of signature and the encryption trailer blocks
+		//
+
+		if (!pclient->GetContextSizes())
+		{
+			wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
+
+			continue;
+		}
 		wprintf(L"Client %d: Package MaxSignature size: %d, SecurityTrailer size: %d\n", index, pclient->SecPkgContextSizes.cbMaxSignature, pclient->SecPkgContextSizes.cbSecurityTrailer);
 
 
-	//
-	//Impersonation test.
-	//
+		//
+		//Impersonation test.
+		//
 
-	if (!pclient->ImpersonateClient())
-	{
-		wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
+		if (!pclient->ImpersonateClient())
+		{
+			wprintf(L"Client %d: Impersonation test failed. Aborting.\n", index);
 
-		goto cleanup;
-	}
-	wprintf(L"Client %d: Impersonation test success!\n", index);
+			continue;
+		}
+		wprintf(L"Client %d: Impersonation test success!\n", index);
 
 
-	//
-	//Send an encrypted message to the client.
-	//
+		//
+		//Send an encrypted message to the client.
+		//
 
-	//First get the current time
-	pclient->GetTheTime(pMessage);
+		//First get the current time
+		pclient->GetTheTime(pMessage);
 
-	if (!pclient->SecureSend(pMessage, cbpMessage))
-	{
-		wprintf(L"Client %d: Encryption test failed. Aborting.\n", index);
+		if (!pclient->SecureSend(pMessage, cbpMessage))
+		{
+			wprintf(L"Client %d: Encryption test failed. Aborting.\n", index);
 
-		goto cleanup;
-	}
-	wprintf(L"Client %d: Encryption test succeess!\n", index);
+			continue;
+		}
+		wprintf(L"Client %d: Encryption test succeess!\n", index);
+
+		wprintf(L"Client %d: Advanced test completed successfully!\n", index);
+
+
+	}//loop
+
 
 
 cleanup:

@@ -8,7 +8,8 @@ public:
 	int		iPort;
 	WCHAR	szTargetName[255];
 	WCHAR	szPackageName[40];
-
+	
+	BOOL Initialize();
 	BOOL Connect();
 	BOOL SendTestType(int iTestType);
 	BOOL SendPackageName();

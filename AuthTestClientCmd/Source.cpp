@@ -192,9 +192,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	TestType TestType = Param->TestType;
 
-
-
-
+	
 	//
 	// Connect to the server
 	//
@@ -207,6 +205,17 @@ BOOL ClientHandlerThread(LPVOID _param)
 		goto cleanup;
 	}
 	wprintf(L"Client %d: Connected to server: %s\n", Param->iIndex, pclient->szServerName);
+
+
+	//
+	// Initialize
+	//
+
+	if (pclient->Initialize())
+	{
+		wprintf(L"Client %d: Starting new test...\n", Param->iIndex);
+	}
+
 
 	//
 	// Send Test Type
@@ -275,7 +284,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 	if (!pclient->GetContextInfo())
 	{
 		wprintf(L"Client %d: Test Failed. GetContextInfo failed: 0x%08x.  Aborting.\n", Param->iIndex, pclient->dwErrorCode);
-		
+
 		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
@@ -343,7 +352,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 	if (wcsncmp(pMessage, L"The time now is", 15) != NULL)
 	{
 		wprintf(L"Client %d: Advanced test Failed. Decrypted message not recognized. Error 0x%08x at %s. \n", Param->iIndex, pclient->dwErrorCode, pclient->szErrorLocation);
-		
+
 		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
 
 		goto cleanup;
@@ -355,8 +364,6 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 
 	wprintf(L"Client %d: Advanced test completed successfully!\n", Param->iIndex);
-
-
 
 
 cleanup:

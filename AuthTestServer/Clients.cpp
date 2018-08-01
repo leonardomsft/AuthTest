@@ -31,6 +31,18 @@ ClientConn::~ClientConn()
 
 }
 
+BOOL ClientConn::Initialize()
+{
+	if (!fNewConversation)
+	{
+		DeleteSecurityContext(&hctxt);
+
+		fNewConversation = true;
+	}
+
+	return true;
+}
+
 
 BOOL ClientConn::ReceiveTestType(int * iTestType)
 {
@@ -661,7 +673,7 @@ BOOL ClientConn::SendMsg(
 	DWORD cbBuf)
 {
 	if (0 == cbBuf)
-		return(TRUE);
+		return true;
 
 	//----------------------------------------------------------------
 	//  Send the size of the message first, so recv on the other side knows how many bytes to expect.
@@ -671,7 +683,7 @@ BOOL ClientConn::SendMsg(
 		(PBYTE)&cbBuf,
 		sizeof(cbBuf)))
 	{
-		return(FALSE);
+		return false;
 	}
 
 	//----------------------------------------------------------------    
@@ -682,7 +694,7 @@ BOOL ClientConn::SendMsg(
 		pBuf,
 		cbBuf))
 	{
-		return(FALSE);
+		return false;
 	}
 
 	return(TRUE);
@@ -706,12 +718,12 @@ BOOL ClientConn::ReceiveMsg(
 		sizeof(cbData),
 		&cbRead))
 	{
-		return(FALSE);
+		return false;
 	}
 
 	if (sizeof(cbData) != cbRead)
 	{
-		return(FALSE);
+		return false;
 	}
 
 	//----------------------------------------------------------------
@@ -723,12 +735,12 @@ BOOL ClientConn::ReceiveMsg(
 		cbData,
 		&cbRead))
 	{
-		return(FALSE);
+		return false;
 	}
 
 	if (cbRead != cbData)
 	{
-		return(FALSE);
+		return false;
 	}
 
 	*pcbRead = cbRead;
@@ -748,7 +760,7 @@ BOOL ClientConn::SendBytes(
 
 	if (0 == cbBuf)
 	{
-		return(TRUE);
+		return true;
 	}
 
 	while (cbRemaining)
@@ -758,10 +770,12 @@ BOOL ClientConn::SendBytes(
 			(const char *)pTemp,
 			cbRemaining,
 			0);
+
 		if (SOCKET_ERROR == cbSent)
 		{
 			wprintf(L"Client %d: send failed: %u\n", iIndex, GetLastError());
-			return FALSE;
+
+			return false;
 		}
 
 		pTemp += cbSent;
@@ -770,7 +784,7 @@ BOOL ClientConn::SendBytes(
 	//printf("done.\n");
 
 
-	return TRUE;
+	return true;
 }  // end SendBytes
 
 BOOL ClientConn::ReceiveBytes(
@@ -789,7 +803,8 @@ BOOL ClientConn::ReceiveBytes(
 			(char *)pTemp,
 			cbRemaining,
 			0);
-		if (0 == cbRead)
+		
+		if (NULL == cbRead)
 		{
 			break;
 		}
@@ -797,7 +812,8 @@ BOOL ClientConn::ReceiveBytes(
 		if (SOCKET_ERROR == cbRead)
 		{
 			wprintf(L"Client %d: recv failed: %u\n", iIndex, GetLastError());
-			return FALSE;
+			
+			return false;
 		}
 
 		cbRemaining -= cbRead;
@@ -806,7 +822,7 @@ BOOL ClientConn::ReceiveBytes(
 
 	*pcbRead = cbBuf - cbRemaining;
 
-	return TRUE;
+	return true;
 }  // end ReceivesBytes
 
 

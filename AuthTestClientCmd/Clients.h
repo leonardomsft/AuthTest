@@ -16,6 +16,7 @@ public:
 	WCHAR	szTargetName[255];
 	WCHAR	szPackageName[40];
 
+	BOOL Initialize();
 	BOOL Connect();
 	BOOL SendTestType(int iTestType);
 	BOOL SendPackageName();
@@ -43,10 +44,12 @@ public:
 
 
 
+
 private:
 
-	SOCKET s;
+	SOCKET	s;
 	BOOL	fNewConversation;
+
 
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
