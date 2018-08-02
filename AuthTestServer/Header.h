@@ -8,8 +8,16 @@ extern BOOL fVerbose;
 
 enum TestType
 {
-	Basic = 1,
+	Invalid,
+	Basic,
 	Advanced
+};
+
+enum AuthResult
+{
+	Invalid,
+	Failed,
+	Success
 };
 
 

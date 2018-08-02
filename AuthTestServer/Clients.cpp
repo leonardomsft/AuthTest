@@ -96,32 +96,82 @@ BOOL ClientConn::ReceivePackageName()
 	return true;
 }
 
+BOOL ClientConn::SendNTLMResults(int iNTLMResults)
+{
+	CHAR SendBuffer[4] = {};
+
+	sprintf_s(SendBuffer, "%d", iNTLMResults);
+
+	int iResult = 0;
+
+	iResult = send(Connections[iIndex], SendBuffer, sizeof(iNTLMResults), NULL);
+
+	if (iResult < 0)
+	{
+		wprintf(L"Client %d: Connection error: %d.\n", iIndex, GetLastError());
+
+		return false;
+	}
+
+	if (iResult == 0)
+	{
+		wprintf(L"Client %d: Connection gracefully closed.\n", iIndex);
+
+		return false;
+	}
+
+	return true;
+
+}
+
+
 BOOL ClientConn::GetContextInfo()
 {
 	SECURITY_STATUS	ss;
 
 	if (!_wcsicmp(szPackageName, L"CredSSP"))
 	{
+		//CredSSP
+
 		ss = QueryContextAttributes(
 			&hctxt,
 			SECPKG_ATTR_NEGOTIATION_PACKAGE,
 			&SecPackageInfo);
 
+		if (!SEC_SUCCESS(ss))
+		{
+			wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
+
+			return false;
+		}
+
+		wcscpy_s(szSelectedPackageName, 40, SecPackageInfo.PackageInfo->Name);
+
+		FreeContextBuffer(SecPackageInfo.PackageInfo);
+
 	}
 	else
 	{
+		//Other packages
+
 		ss = QueryContextAttributes(
 			&hctxt,
 			SECPKG_ATTR_NEGOTIATION_INFO,
 			&SecPkgNegInfo);
+	
+		if (!SEC_SUCCESS(ss))
+		{
+			wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
+
+			return false;
+		}
+
+		wcscpy_s(szSelectedPackageName, 40, SecPkgNegInfo.PackageInfo->Name);
+
+		FreeContextBuffer(SecPkgNegInfo.PackageInfo);
+
 	}
 
-	if (!SEC_SUCCESS(ss))
-	{
-		wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
-
-		return false;
-	}
 
 	return true;
 
@@ -160,6 +210,8 @@ BOOL ClientConn::Authenticate()
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
+	AuthResult		AuthResult = Invalid;
+
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -283,7 +335,7 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: ReceiveMsg failed.\n", iIndex);
 
-			goto CleanUp;
+			break;
 		}
 
 		cbOut = cbMaxMessage;
@@ -299,7 +351,13 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
 
-			goto CleanUp;
+
+			//Idea: Check if done == true, 
+
+			AuthResult = Failed;
+
+
+			break
 		}
 
 		fNewConversation = false;
@@ -311,11 +369,39 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: SendMsg failed.\n", iIndex);
 
-			goto CleanUp;
+			break;
 		}
 	}
 
+
+	//Populate szSelectedPackageName
+	
+	if (!GetContextInfo())
+	{
+		goto CleanUp;
+
+	}
+
+	//For NTLM-based packages, inform the results to the client 
+
+	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
+	{
+		if (SendNTLMResults())
+		{
+
+		}
+	}
+	
+	
+	//Authentication complete
+
+
+
+
 	fSuccess = true;
+
+
+
 
 CleanUp:
 

@@ -9,6 +9,7 @@ class ClientConn
 public:
 	int			iIndex;
 	WCHAR		szPackageName[40];
+	WCHAR		szSelectedPackageName[40];
 	CtxtHandle	hctxt;
 	SecPkgContext_NegotiationInfo SecPkgNegInfo;
 	SecPkgContext_PackageInfo SecPackageInfo;
@@ -32,6 +33,7 @@ public:
 private:
 	BOOL fNewConversation;
 
+	BOOL SendNTLMResults(int iNTLMResults);
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);
