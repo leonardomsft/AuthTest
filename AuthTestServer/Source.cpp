@@ -217,8 +217,6 @@ BOOL ClientHandlerThread(int index)
 	int iTestType = 0;
 	TestType TestType;
 
-	BOOL fSuccess;
-
 	while (true)
 	{
 

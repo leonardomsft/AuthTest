@@ -39,6 +39,9 @@ BOOL ClientConn::Initialize()
 		fNewConversation = true;
 	}
 
+	wcscpy_s(szErrorLocation, 255, L"");
+	wcscpy_s(szErrorMessage, 255, L"");
+
 	return true;
 }
 

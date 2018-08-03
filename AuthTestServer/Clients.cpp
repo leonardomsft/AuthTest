@@ -241,8 +241,8 @@ BOOL ClientConn::Authenticate()
 	{
 
 		//1. Build Schannel cred structure
-
-		pSchannelCred = (PSCHANNEL_CRED)malloc(sizeof(SCHANNEL_CRED));
+				
+		pSchannelCred = (PSCHANNEL_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(SCHANNEL_CRED));
 
 		if (NULL == pSchannelCred)
 		{
@@ -250,8 +250,6 @@ BOOL ClientConn::Authenticate()
 
 			goto CleanUp;
 		}
-
-		ZeroMemory(pSchannelCred, sizeof(SCHANNEL_CRED));
 
 		pSchannelCred->dwVersion = SCHANNEL_CRED_VERSION;
 
@@ -266,7 +264,7 @@ BOOL ClientConn::Authenticate()
 
 		//2. Build CREDSSP cred structure
 
-		pCred = (PCREDSSP_CRED)malloc(sizeof(CREDSSP_CRED));
+		pCred = (PCREDSSP_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(CREDSSP_CRED));
 
 		if (NULL == pCred)
 		{
@@ -274,8 +272,6 @@ BOOL ClientConn::Authenticate()
 
 			goto CleanUp;
 		}
-
-		ZeroMemory(pCred, sizeof(CREDSSP_CRED));
 
 		pCred->pSpnegoCred = pSpnegoCred;
 		pCred->pSchannelCred = pSchannelCred;
@@ -407,15 +403,15 @@ CleanUp:
 
 		if (pCred->pSchannelCred)
 		{
-			free(pCred->pSchannelCred);
+			LocalFree(pCred->pSchannelCred);
 		}
 
 		if (pCred->pSpnegoCred)
 		{
-			free(pCred->pSpnegoCred);
+			LocalFree(pCred->pSpnegoCred);
 		}
 
-		free(pCred);
+		LocalFree(pCred);
 	}
 
 
