@@ -211,10 +211,13 @@ BOOL ClientHandlerThread(LPVOID _param)
 	// Initialize
 	//
 
-	if (pclient->Initialize())
+	if (!pclient->Initialize())
 	{
-		wprintf(L"Client %d: Starting new test...\n", Param->iIndex);
+		wprintf(L"Client %d: Error Initializing. Aborting.\n", Param->iIndex);
+
+		goto cleanup;
 	}
+	wprintf(L"Client %d: Starting new test...\n", Param->iIndex);
 
 
 	//
@@ -281,25 +284,16 @@ BOOL ClientHandlerThread(LPVOID _param)
 	//Prints the Package selected during authentication, Encryption Algorithm, and key size
 	//
 
-	if (!pclient->GetContextInfo())
-	{
-		wprintf(L"Client %d: Test Failed. GetContextInfo failed: 0x%08x.  Aborting.\n", Param->iIndex, pclient->dwErrorCode);
-
-		wprintf(L"Client %d: %s\n", Param->iIndex, pclient->szErrorMessage);
-
-		goto cleanup;
-	}
-
 	if (!_wcsicmp(pclient->szPackageName, L"CredSSP"))
 	{
-		wprintf(L"Client %d: Package selected: CredSSP over %s\n", Param->iIndex, pclient->SecPackageInfo.PackageInfo->Name);
+		wprintf(L"Client %d: Package selected: CredSSP over %s\n", Param->iIndex, pclient->szSelectedPackageName);
 
 	}
 	else
 	{
-		wprintf(L"Client %d: Package selected: %s\n", Param->iIndex, pclient->SecPkgNegInfo.PackageInfo->Name);
+		wprintf(L"Client %d: Package selected: %s\n", Param->iIndex, pclient->szSelectedPackageName);
 	}
-	wprintf(L"Client %d: Encryption Algorithm: %s %d bits, Signature Algorithm: %s\n", Param->iIndex, pclient->SecPackageKeyInfo.sEncryptAlgorithmName, pclient->SecPackageKeyInfo.KeySize, pclient->SecPackageKeyInfo.sSignatureAlgorithmName);
+	wprintf(L"Client %d: Encryption Algorithm: %s %d bits, Signature Algorithm: %s\n", Param->iIndex, pclient->szEncryptAlgorithmName, pclient->KeySize, pclient->szSignatureAlgorithmName);
 
 
 	//

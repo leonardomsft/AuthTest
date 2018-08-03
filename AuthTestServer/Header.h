@@ -13,12 +13,6 @@ enum TestType
 	Advanced
 };
 
-enum AuthResult
-{
-	Invalid,
-	Failed,
-	Success
-};
 
 
 

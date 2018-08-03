@@ -21,29 +21,17 @@ ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTar
 
 ClientConn::~ClientConn()
 {
-	if (szErrorMessage)
-		LocalFree(szErrorMessage);
-
 	shutdown(s, SD_BOTH);
 
 	closesocket(s);
 
 	wprintf(L"Client %d: Disconnected.\n", iIndex);
 
-	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
-
-	if (!fNewConversation)
-	{
-		DeleteSecurityContext(&hctxt);
-	}
-
 }
 
 
 BOOL ClientConn::Initialize()
 {
-
-	FreeContextBuffer(SecPkgNegInfo.PackageInfo);
 
 	if (!fNewConversation)
 	{
@@ -223,6 +211,44 @@ BOOL ClientConn::SendPackageName()
 }
 
 
+BOOL ClientConn::ReceiveAuthResult(int * iAuthResult)
+{
+	CHAR RecvBuffer[4] = {};
+
+	int iResult = 0;
+
+	iResult = recv(s, RecvBuffer, sizeof(RecvBuffer), NULL);
+
+	if (iResult < 0)
+	{
+		wprintf(L"Client %d: Connection error: %d.\n", iIndex, GetLastError());
+
+		return false;
+	}
+
+	if (iResult == 0)
+	{
+		wprintf(L"Client %d: Connection gracefully closed.\n", iIndex);
+
+		return false;
+	}
+
+	*iAuthResult = atoi(RecvBuffer);
+
+	//validate
+
+	if (*iAuthResult < 0 || *iAuthResult > 1)
+	{
+		wprintf(L"Client %d: Invalid AuthResult.\n", iIndex);
+
+		return false;
+	}
+
+
+	return true;
+}
+
+
 
 BOOL ClientConn::GetContextInfo()
 {
@@ -230,25 +256,47 @@ BOOL ClientConn::GetContextInfo()
 
 	if (!_wcsicmp(szPackageName, L"CredSSP"))
 	{
+		//CredSSP
+
 		ss = QueryContextAttributes(
 			&hctxt,
 			SECPKG_ATTR_NEGOTIATION_PACKAGE,
 			&SecPackageInfo);
+
+		if (!SEC_SUCCESS(ss))
+		{
+			wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
+
+			return false;
+		}
+
+		wcscpy_s(szSelectedPackageName, 40, SecPackageInfo.PackageInfo->Name);
+
+		FreeContextBuffer(SecPackageInfo.PackageInfo);
+
 	}
 	else
 	{
+		//Other packages
+
 		ss = QueryContextAttributes(
 			&hctxt,
 			SECPKG_ATTR_NEGOTIATION_INFO,
 			&SecPkgNegInfo);
+
+		if (!SEC_SUCCESS(ss))
+		{
+			wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
+
+			return false;
+		}
+
+		wcscpy_s(szSelectedPackageName, 40, SecPkgNegInfo.PackageInfo->Name);
+
+		FreeContextBuffer(SecPkgNegInfo.PackageInfo);
+
 	}
 
-	if (!SEC_SUCCESS(ss))
-	{
-		LogError(ss, L"QueryContextAttributes, SECPKG_ATTR_NEGOTIATION_INFO");
-
-		return false;
-	}
 
 	ss = QueryContextAttributes(
 		&hctxt,
@@ -257,16 +305,20 @@ BOOL ClientConn::GetContextInfo()
 
 	if (!SEC_SUCCESS(ss))
 	{
-		LogError(ss, L"QueryContextAttributes, SECPKG_ATTR_KEY_INFO");
+		wprintf(L"Client %d: QueryContextAttributes failed: 0x%08x\n", iIndex, ss);
 
 		return false;
 	}
+	wcscpy_s(szEncryptAlgorithmName, 40, SecPackageKeyInfo.sEncryptAlgorithmName);
+	KeySize = SecPackageKeyInfo.KeySize;
+	wcscpy_s(szSignatureAlgorithmName, 40, SecPackageKeyInfo.sSignatureAlgorithmName);
 
+	FreeContextBuffer(SecPackageKeyInfo.sEncryptAlgorithmName);
+	FreeContextBuffer(SecPackageKeyInfo.sSignatureAlgorithmName);
 
 	return true;
 
 }
-
 
 BOOL ClientConn::GetContextSizes()
 {
@@ -299,6 +351,7 @@ BOOL ClientConn::Authenticate()
 	DWORD			cbIn = 0;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
+	int				iServerAuthResult = 0;
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -327,7 +380,7 @@ BOOL ClientConn::Authenticate()
 
 		//1. Build SPNEGO cred structure
 
-		pSpnegoCred = (PSEC_WINNT_AUTH_IDENTITY_W)malloc(sizeof(SEC_WINNT_AUTH_IDENTITY_W));
+		pSpnegoCred = (PSEC_WINNT_AUTH_IDENTITY_W)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(SEC_WINNT_AUTH_IDENTITY_W));
 
 		if (NULL == pSpnegoCred)
 		{
@@ -349,7 +402,7 @@ BOOL ClientConn::Authenticate()
 
 		//2. Build Schannel cred structure
 
-		pSchannelCred = (PSCHANNEL_CRED)malloc(sizeof(SCHANNEL_CRED));
+		pSchannelCred = (PSCHANNEL_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(SCHANNEL_CRED));
 
 		if (NULL == pSchannelCred)
 		{
@@ -367,7 +420,7 @@ BOOL ClientConn::Authenticate()
 
 		//3. Build CREDSSP cred structure
 
-		pCred = (PCREDSSP_CRED)malloc(sizeof(CREDSSP_CRED));
+		pCred = (PCREDSSP_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(CREDSSP_CRED));
 
 		if (NULL == pCred)
 		{
@@ -476,6 +529,25 @@ BOOL ClientConn::Authenticate()
 	}
 
 
+	//Check if the server succeeded
+
+	if (!fDone || !ReceiveAuthResult(&iServerAuthResult) || iServerAuthResult == 0)
+	{
+		fDone = false;
+
+		goto CleanUp;
+	}
+
+
+
+	//Populate szSelectedPackageName
+
+	if (!GetContextInfo())
+	{
+		goto CleanUp;
+
+	}
+
 
 CleanUp:
 
@@ -494,16 +566,16 @@ CleanUp:
 
 		if (pCred->pSchannelCred)
 		{
-			free(pCred->pSchannelCred);
+			LocalFree(pCred->pSchannelCred);
 		}
 
 
 		if (pCred->pSpnegoCred)
 		{
-			free(pCred->pSpnegoCred);
+			LocalFree(pCred->pSpnegoCred);
 		}
 
-		free(pCred);
+		LocalFree(pCred);
 	}
 
 	//Release context buffer

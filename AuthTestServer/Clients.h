@@ -33,7 +33,7 @@ public:
 private:
 	BOOL fNewConversation;
 
-	BOOL SendNTLMResults(int iNTLMResults);
+	BOOL SendAuthResult(int intAuthResult);
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);

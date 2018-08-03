@@ -16,6 +16,11 @@ public:
 	WCHAR	szTargetName[255];
 	WCHAR	szPackageName[40];
 
+	WCHAR	szSelectedPackageName[40];
+	WCHAR	szEncryptAlgorithmName[40];
+	int		KeySize;
+	WCHAR	szSignatureAlgorithmName[40];
+
 	BOOL Initialize();
 	BOOL Connect();
 	BOOL SendTestType(int iTestType);
@@ -55,6 +60,8 @@ private:
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
+	BOOL ReceiveAuthResult(int * iAuthResult);
+
 	void LogError(LONG dwError, LPCWSTR pszErrorLocation);
 
 	void PrintHexDump(DWORD length, PBYTE buffer);

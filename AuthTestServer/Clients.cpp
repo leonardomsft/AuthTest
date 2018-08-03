@@ -16,11 +16,9 @@ ClientConn::~ClientConn()
 
 	closesocket(Connections[iIndex]);
 
-	InterlockedDecrement(&ConnectionCount);
-
-	//wprintf(L"ConnectionCount Decremented to: %d\n", ConnectionCount);
-
 	wprintf(L"Client %d: Disconnected.\n", iIndex);
+
+	InterlockedDecrement(&ConnectionCount);
 }
 
 BOOL ClientConn::Initialize()
@@ -96,15 +94,15 @@ BOOL ClientConn::ReceivePackageName()
 	return true;
 }
 
-BOOL ClientConn::SendNTLMResults(int iNTLMResults)
+BOOL ClientConn::SendAuthResult(int iAuthResult)
 {
 	CHAR SendBuffer[4] = {};
 
-	sprintf_s(SendBuffer, "%d", iNTLMResults);
+	sprintf_s(SendBuffer, "%d", iAuthResult);
 
 	int iResult = 0;
 
-	iResult = send(Connections[iIndex], SendBuffer, sizeof(iNTLMResults), NULL);
+	iResult = send(Connections[iIndex], SendBuffer, sizeof(iAuthResult), NULL);
 
 	if (iResult < 0)
 	{
@@ -202,17 +200,15 @@ BOOL ClientConn::Authenticate()
 {
 	SECURITY_STATUS	ss;
 	DWORD			cbIn, cbOut;
-	BOOL			done = false;
-	BOOL			fSuccess = false;
+	BOOL			fdone = false;
 	TimeStamp		Lifetime;
 	PSecPkgInfo		pkgInfo;
 	DWORD			cbMaxMessage;
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
-	AuthResult		AuthResult = Invalid;
-
-
+	
+	
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
 	PSCHANNEL_CRED				pSchannelCred = NULL;
@@ -325,7 +321,7 @@ BOOL ClientConn::Authenticate()
 	//Server-side loop of AcceptSecurityContext (client side is InitializeSecurityContext)
 	//
 
-	while (!done)
+	while (!fdone)
 	{
 		if (!ReceiveMsg(
 			Connections[iIndex],
@@ -345,19 +341,13 @@ BOOL ClientConn::Authenticate()
 			cbIn,
 			pOutBuf,
 			&cbOut,
-			&done,
+			&fdone,
 			&hcred,
 			&hctxt))
 		{
 			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
 
-
-			//Idea: Check if done == true, 
-
-			AuthResult = Failed;
-
-
-			break
+			break;
 		}
 
 		fNewConversation = false;
@@ -373,34 +363,22 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
+	//Inform the result to the client
+
+	if (!SendAuthResult(fdone))
+	{
+		goto CleanUp;
+	}
+
 
 	//Populate szSelectedPackageName
 	
-	if (!GetContextInfo())
+	if (fdone) 
 	{
-		goto CleanUp;
-
+		GetContextInfo();
 	}
 
-	//For NTLM-based packages, inform the results to the client 
-
-	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
-	{
-		if (SendNTLMResults())
-		{
-
-		}
-	}
-	
-	
 	//Authentication complete
-
-
-
-
-	fSuccess = true;
-
-
 
 
 CleanUp:
@@ -444,7 +422,7 @@ CleanUp:
 	//Release context buffer
 	FreeContextBuffer(pkgInfo);
 
-	return fSuccess;
+	return fdone;
 }  // end Authenticate
 
 

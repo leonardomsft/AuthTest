@@ -274,25 +274,14 @@ BOOL ClientHandlerThread(int index)
 		//
 		//Prints the Package selected during authentication
 		//
-
-		if (!pclient->GetContextInfo())
-		{
-			wprintf(L"Client %d: GetContextInfo failed. Aborting.\n", index);
-
-			continue;
-		}
-
 		if (!_wcsicmp(pclient->szPackageName, L"CredSSP"))
 		{
-			wprintf(L"Client %d: Package selected: CredSSP over %s\n", index, pclient->SecPackageInfo.PackageInfo->Name);
+			wprintf(L"Client %d: Package selected: CredSSP over %s\n", index, pclient->szSelectedPackageName);
 		}
 		else
 		{
-			wprintf(L"Client %d: Package selected: %s\n", index, pclient->SecPkgNegInfo.PackageInfo->Name);
+			wprintf(L"Client %d: Package selected: %s\n", index, pclient->szSelectedPackageName);
 		}
-		//Cleanup
-		FreeContextBuffer(pclient->SecPkgNegInfo.PackageInfo);
-
 
 
 		//
