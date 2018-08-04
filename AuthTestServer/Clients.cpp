@@ -207,6 +207,8 @@ BOOL ClientConn::Authenticate()
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
+
+	BYTE			MessageType = MTToken;
 	
 	
 	//for credssp
@@ -303,8 +305,8 @@ BOOL ClientConn::Authenticate()
 
 	//Allocate in and out buffers
 
-	pInBuf = (PBYTE)malloc(cbMaxMessage);
-	pOutBuf = (PBYTE)malloc(cbMaxMessage);
+	pInBuf = (PBYTE)malloc(cbMaxMessage + sizeof(MessageType));
+	pOutBuf = (PBYTE)malloc(cbMaxMessage + sizeof(MessageType));
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -330,6 +332,8 @@ BOOL ClientConn::Authenticate()
 			break;
 		}
 
+
+
 		cbOut = cbMaxMessage;
 
 		if (!GenServerContext(
@@ -344,6 +348,8 @@ BOOL ClientConn::Authenticate()
 			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
 
 			break;
+
+
 		}
 
 		fNewConversation = false;
