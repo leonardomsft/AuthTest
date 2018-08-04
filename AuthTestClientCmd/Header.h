@@ -10,6 +10,13 @@ enum TestType
 	Advanced
 };
 
+enum MessageType
+{
+	MTInvalid,
+	MTToken,
+	MTError
+};
+
 typedef struct THREADSTRUCT
 {
 	int		iIndex;

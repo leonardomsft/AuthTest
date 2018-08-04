@@ -353,6 +353,8 @@ BOOL ClientConn::Authenticate()
 	PBYTE			pOutBuf = nullptr;
 	int				iServerAuthResult = 0;
 
+	BYTE			MessageType = MTToken;
+
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
 	PSCHANNEL_CRED				pSchannelCred = NULL;
@@ -460,8 +462,8 @@ BOOL ClientConn::Authenticate()
 
 
 	//Allocate in and out buffers
-	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
-	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
+	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
+	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -506,7 +508,7 @@ BOOL ClientConn::Authenticate()
 		if (!GenClientContext(
 			pInBuf,
 			cbIn,
-			pOutBuf,
+			pOutBuf + sizeof(MessageType),
 			&cbOut,
 			&fDone))
 		{
@@ -514,6 +516,8 @@ BOOL ClientConn::Authenticate()
 
 			break;
 		}
+
+		
 
 		fNewConversation = false;
 
