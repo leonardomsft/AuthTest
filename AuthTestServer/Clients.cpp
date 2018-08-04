@@ -305,8 +305,8 @@ BOOL ClientConn::Authenticate()
 
 	//Allocate in and out buffers
 
-	pInBuf = (PBYTE)malloc(cbMaxMessage + sizeof(MessageType));
-	pOutBuf = (PBYTE)malloc(cbMaxMessage + sizeof(MessageType));
+	pInBuf = (PBYTE)malloc(cbMaxMessage);
+	pOutBuf = (PBYTE)malloc(cbMaxMessage);
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{

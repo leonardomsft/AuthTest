@@ -462,8 +462,8 @@ BOOL ClientConn::Authenticate()
 
 
 	//Allocate in and out buffers
-	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
-	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
+	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
+	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -508,7 +508,7 @@ BOOL ClientConn::Authenticate()
 		if (!GenClientContext(
 			pInBuf,
 			cbIn,
-			pOutBuf + sizeof(MessageType),
+			pOutBuf,
 			&cbOut,
 			&fDone))
 		{
