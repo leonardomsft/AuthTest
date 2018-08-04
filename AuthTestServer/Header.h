@@ -13,6 +13,12 @@ enum TestType
 	Advanced
 };
 
+enum MessageType
+{
+	MTInvalid,
+	MTToken,
+	MTError
+};
 
 
 
