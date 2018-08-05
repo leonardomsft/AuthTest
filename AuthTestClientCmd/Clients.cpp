@@ -592,6 +592,11 @@ BOOL ClientConn::Authenticate()
 
 		if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
 		{
+
+			memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
+
+			LogError(SrvError, L"(Server-side error)");
+
 			fDone = false;
 
 			goto CleanUp;
