@@ -235,16 +235,6 @@ BOOL ClientConn::ReceiveAuthResult(int * iAuthResult)
 
 	*iAuthResult = atoi(RecvBuffer);
 
-	//validate
-
-	if (*iAuthResult < 0 || *iAuthResult > 1)
-	{
-		wprintf(L"Client %d: Invalid AuthResult.\n", iIndex);
-
-		return false;
-	}
-
-
 	return true;
 }
 
@@ -353,7 +343,6 @@ BOOL ClientConn::Authenticate()
 	PBYTE			pOutBuf = nullptr;
 	int				iServerAuthResult = 0;
 
-	BYTE			MessageType = MTToken;
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -462,8 +451,8 @@ BOOL ClientConn::Authenticate()
 
 
 	//Allocate in and out buffers
-	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
-	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
+	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
+	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -474,6 +463,13 @@ BOOL ClientConn::Authenticate()
 
 	//pInBuff is NULL the first time
 	cbOut = pkgInfo->cbMaxToken;
+
+
+	//Synchronize with the server
+	if (!ReceiveAuthResult(&iServerAuthResult) || iServerAuthResult != MTReady)
+	{
+		goto CleanUp;
+	}
 
 
 	//
@@ -501,6 +497,11 @@ BOOL ClientConn::Authenticate()
 				break;
 			}
 
+			if (*pInBuf == MTError)
+			{
+				break;
+
+			}
 		}
 
 		cbOut = pkgInfo->cbMaxToken;
@@ -514,10 +515,24 @@ BOOL ClientConn::Authenticate()
 		{
 			//The error has already been captured. Just return.
 
+			*pOutBuf = MTError;
+		}
+		else
+		{
+			*pOutBuf = MTToken;
+		}
+
+		if (fDone && *pOutBuf == MTToken)
+		{
+			*pOutBuf = MTLastToken;
+		}
+
+		if (*pOutBuf == MTLastToken && *pInBuf == MTLastToken)
+		{
+			//Both sides are done. No need to send anymore messages
 			break;
 		}
 
-		
 
 		fNewConversation = false;
 
@@ -533,23 +548,12 @@ BOOL ClientConn::Authenticate()
 	}
 
 
-	//Check if the server succeeded
-
-	if (!fDone || !ReceiveAuthResult(&iServerAuthResult) || iServerAuthResult == 0)
+	if (fDone)
 	{
-		fDone = false;
-
-		goto CleanUp;
-	}
-
-
-
-	//Populate szSelectedPackageName
-
-	if (!GetContextInfo())
-	{
-		goto CleanUp;
-
+		if (!GetContextInfo())  //Populate szSelectedPackageName
+		{
+			fDone = false;
+		}
 	}
 
 
@@ -615,7 +619,7 @@ BOOL ClientConn::GenClientContext(
 
 	OutSecBuff.cbBuffer = *pcbOut;
 	OutSecBuff.BufferType = SECBUFFER_TOKEN;
-	OutSecBuff.pvBuffer = pOut;
+	OutSecBuff.pvBuffer = pOut + sizeof(MessageType);
 
 	//
 	//  Prepare In buffer.
@@ -625,9 +629,9 @@ BOOL ClientConn::GenClientContext(
 	InBuffDesc.cBuffers = 1;
 	InBuffDesc.pBuffers = &InSecBuff;
 
-	InSecBuff.cbBuffer = cbIn;
+	InSecBuff.cbBuffer = cbIn - sizeof(MessageType);
 	InSecBuff.BufferType = SECBUFFER_TOKEN;
-	InSecBuff.pvBuffer = pIn;
+	InSecBuff.pvBuffer = pIn + sizeof(MessageType);
 
 	ss = InitializeSecurityContext(
 		&hCred,
@@ -668,7 +672,7 @@ BOOL ClientConn::GenClientContext(
 		}
 	}
 
-	*pcbOut = OutSecBuff.cbBuffer;
+	*pcbOut = OutSecBuff.cbBuffer + sizeof(MessageType);
 
 	*pfDone = !((SEC_I_CONTINUE_NEEDED == ss) || (SEC_I_COMPLETE_AND_CONTINUE == ss));
 

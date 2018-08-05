@@ -3,6 +3,8 @@
 extern SOCKET Connections[MAXWORD];
 extern long ConnectionCount;
 extern BOOL fVerbose;
+extern BYTE	MessageType;
+
 
 #define SEC_SUCCESS(Status) ((Status) >= 0)
 
@@ -13,10 +15,12 @@ enum TestType
 	Advanced
 };
 
-enum MessageType
+enum MT
 {
 	MTInvalid,
+	MTReady,
 	MTToken,
+	MTLastToken,
 	MTError
 };
 

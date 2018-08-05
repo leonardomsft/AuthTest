@@ -29,6 +29,12 @@ public:
 	ClientConn(int i);
 	~ClientConn();
 
+	//Error handling
+	LONG	dwErrorCode;
+	WCHAR	szErrorLocation[255];
+	WCHAR	szErrorMessage[255];
+
+
 
 private:
 	BOOL fNewConversation;
@@ -40,6 +46,8 @@ private:
 	BOOL ReceiveBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL AddServerCertInfo(PSCHANNEL_CRED pSchannelCred);
 	BOOL CreateSelfSignedMachineCert(LPWSTR pszSubjectName);
+
+	void LogError(LONG dwError, LPCWSTR pszErrorLocation);
 
 	void PrintHexDump(DWORD length, PBYTE buffer);
 

@@ -203,14 +203,10 @@ BOOL ClientConn::Authenticate()
 	BOOL			fdone = false;
 	TimeStamp		Lifetime;
 	PSecPkgInfo		pkgInfo;
-	DWORD			cbMaxMessage;
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
 
-	BYTE			MessageType = MTToken;
-	
-	
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
 	PSCHANNEL_CRED				pSchannelCred = NULL;
@@ -230,10 +226,6 @@ BOOL ClientConn::Authenticate()
 
 		goto CleanUp;
 	}
-
-	//Obtain max message size
-	cbMaxMessage = pkgInfo->cbMaxToken;
-
 
 	//
 	//Additional steps if CredSSP
@@ -305,8 +297,8 @@ BOOL ClientConn::Authenticate()
 
 	//Allocate in and out buffers
 
-	pInBuf = (PBYTE)malloc(cbMaxMessage);
-	pOutBuf = (PBYTE)malloc(cbMaxMessage);
+	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
+	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -314,6 +306,14 @@ BOOL ClientConn::Authenticate()
 
 		goto CleanUp;
 	}
+
+
+	//Syncronize with the Client
+	if (!SendAuthResult(MTReady))
+	{
+		goto CleanUp;
+	}
+
 
 	//
 	//Server-side loop of AcceptSecurityContext (client side is InitializeSecurityContext)
@@ -324,7 +324,7 @@ BOOL ClientConn::Authenticate()
 		if (!ReceiveMsg(
 			Connections[iIndex],
 			pInBuf,
-			cbMaxMessage,
+			pkgInfo->cbMaxToken,
 			&cbIn))
 		{
 			wprintf(L"Client %d: ReceiveMsg failed.\n", iIndex);
@@ -332,9 +332,14 @@ BOOL ClientConn::Authenticate()
 			break;
 		}
 
+		if (*pInBuf == MTError)
+		{
+			break;
+
+		}
 
 
-		cbOut = cbMaxMessage;
+		cbOut = pkgInfo->cbMaxToken;
 
 		if (!GenServerContext(
 			pInBuf,
@@ -347,10 +352,24 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
 
-			break;
-
-
+			*pOutBuf = MTError;
 		}
+		else
+		{
+			*pOutBuf = MTToken;
+		}
+
+		if (fdone && *pOutBuf == MTToken)
+		{
+			*pOutBuf = MTLastToken;
+		}
+
+		if (*pOutBuf == MTLastToken && *pInBuf == MTLastToken)
+		{
+			//Both sides are done. No need to send anymore messages
+			break;
+		}
+
 
 		fNewConversation = false;
 
@@ -365,25 +384,23 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
-	//Inform the result to the client
-
-	if (!SendAuthResult(fdone))
-	{
-		goto CleanUp;
-	}
-
-
-	//Populate szSelectedPackageName
 	
-	if (fdone) 
-	{
-		GetContextInfo();
-	}
-
-	//Authentication complete
 
 
 CleanUp:
+
+	if (fdone)
+	{
+		if (!GetContextInfo())  //Populate szSelectedPackageName
+		{
+			fdone = false;
+		}
+	}
+	else
+	{
+		SendAuthResult(MTError);  //Inform the result to the client
+	}
+
 
 	if (pInBuf)
 	{
@@ -455,7 +472,7 @@ BOOL ClientConn::GenServerContext(
 
 	OutSecBuff.cbBuffer = *pcbOut;
 	OutSecBuff.BufferType = SECBUFFER_TOKEN;
-	OutSecBuff.pvBuffer = pOut;
+	OutSecBuff.pvBuffer = pOut + sizeof(MessageType);
 
 	//----------------------------------------------------------------
 	//  Prepare input buffers.
@@ -464,9 +481,9 @@ BOOL ClientConn::GenServerContext(
 	InBuffDesc.cBuffers = 1;
 	InBuffDesc.pBuffers = &InSecBuff;
 
-	InSecBuff.cbBuffer = cbIn;
+	InSecBuff.cbBuffer = cbIn - sizeof(MessageType);
 	InSecBuff.BufferType = SECBUFFER_TOKEN;
-	InSecBuff.pvBuffer = pIn;
+	InSecBuff.pvBuffer = pIn + sizeof(MessageType);
 
 	if (fVerbose)
 		wprintf(L"Client %d: Token buffer received (%lu bytes):\n", iIndex, InSecBuff.cbBuffer);
@@ -506,7 +523,7 @@ BOOL ClientConn::GenServerContext(
 		}
 	}
 
-	*pcbOut = OutSecBuff.cbBuffer;
+	*pcbOut = OutSecBuff.cbBuffer + sizeof(MessageType);
 
 	if (fVerbose)
 		wprintf(L"Client %d: Token buffer generated (%lu bytes):\n", iIndex, OutSecBuff.cbBuffer);
@@ -1272,3 +1289,29 @@ BOOL ClientConn::CreateSelfSignedMachineCert(LPWSTR pszSubjectName)
 	return true;
 
 }// end CreateSelfSignedMachineCert
+
+
+void ClientConn::LogError(LONG dwError, LPCWSTR pszErrorLocation)
+{
+	wcscpy_s(szErrorLocation, 255, pszErrorLocation);
+
+	dwErrorCode = dwError;
+
+	LPWSTR pszErrorMessage = NULL;
+
+	int iRet = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL,
+		dwError,
+		NULL,
+		(LPWSTR)&pszErrorMessage,
+		NULL,
+		NULL);
+
+	if (iRet != NULL)
+	{
+		wcscpy_s(szErrorMessage, iRet + 1, pszErrorMessage);
+
+		LocalFree(pszErrorMessage);
+
+	}
+}
