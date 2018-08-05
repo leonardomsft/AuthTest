@@ -206,6 +206,7 @@ BOOL ClientConn::Authenticate()
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
+	BOOL			fAborted = false;
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -223,6 +224,8 @@ BOOL ClientConn::Authenticate()
 	if (!SEC_SUCCESS(ss))
 	{
 		wprintf(L"Client %d: QuerySecurityPackageInfo failed for package %s, error 0x%08x\n", iIndex, szPackageName, ss);
+
+		fAborted = true;
 
 		goto CleanUp;
 	}
@@ -242,6 +245,8 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: malloc failed for pSchannelCred, error 0x%08x\n", iIndex, GetLastError());
 
+			fAborted = true;
+			
 			goto CleanUp;
 		}
 
@@ -252,6 +257,8 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: AddServerCertInfo failed, error 0x%08x\n", iIndex, GetLastError());
 
+			fAborted = true;
+			
 			goto CleanUp;
 
 		}
@@ -264,6 +271,8 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: malloc failed for pCred, error 0x%08x\n", iIndex, GetLastError());
 
+			fAborted = true;
+			
 			goto CleanUp;
 		}
 
@@ -292,6 +301,8 @@ BOOL ClientConn::Authenticate()
 	{
 		wprintf(L"Client %d: AcquireCredentialsHandle failed: 0x%08x\n", iIndex, ss);
 
+		fAborted = true;
+		
 		goto CleanUp;
 	}
 
@@ -304,15 +315,23 @@ BOOL ClientConn::Authenticate()
 	{
 		wprintf(L"Client %d: Memory allocation failed.\n", iIndex);
 
+		fAborted = true;
+		
 		goto CleanUp;
 	}
 
 
-	//Syncronize with the Client
-	if (!SendAuthResult(MTReady))
+	//
+	//Syncronize with the Client. Server is ready.
+	//
+
+	*pOutBuf = MTReady;
+
+	if (!SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType)))
 	{
 		goto CleanUp;
 	}
+	
 
 
 	//
@@ -382,12 +401,13 @@ BOOL ClientConn::Authenticate()
 
 			break;
 		}
+
+		if (*pOutBuf == MTError)
+		{
+			break;
+		}
 	}
 
-	
-
-
-CleanUp:
 
 	if (fdone)
 	{
@@ -396,10 +416,20 @@ CleanUp:
 			fdone = false;
 		}
 	}
-	else
+
+
+
+CleanUp:
+
+	if (fAborted)
 	{
-		SendAuthResult(MTError);  //Inform the result to the client
+		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+
+		*pOutBuf = MTError;
+
+		SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType));
 	}
+
 
 
 	if (pInBuf)
