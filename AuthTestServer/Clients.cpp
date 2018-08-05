@@ -207,6 +207,7 @@ BOOL ClientConn::Authenticate()
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
 	BOOL			fAborted = false; //failures occurred before the loop
+	DWORD			ClientError = 0;
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -224,6 +225,8 @@ BOOL ClientConn::Authenticate()
 	if (!SEC_SUCCESS(ss))
 	{
 		wprintf(L"Client %d: QuerySecurityPackageInfo failed for package %s, error 0x%08x\n", iIndex, szPackageName, ss);
+
+		LogError(ss, L"QuerySecurityPackageInfo");
 
 		fAborted = true;
 
@@ -243,7 +246,9 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSchannelCred)
 		{
-			wprintf(L"Client %d: malloc failed for pSchannelCred, error 0x%08x\n", iIndex, GetLastError());
+			wprintf(L"Client %d: LocalAlloc failed for pSchannelCred, error 0x%08x\n", iIndex, GetLastError());
+
+			LogError(GetLastError(), L"LocalAlloc, pSchannelCred");
 
 			fAborted = true;
 			
@@ -257,6 +262,8 @@ BOOL ClientConn::Authenticate()
 		{
 			wprintf(L"Client %d: AddServerCertInfo failed, error 0x%08x\n", iIndex, GetLastError());
 
+			LogError(GetLastError(), L"AddServerCertInfo");
+
 			fAborted = true;
 			
 			goto CleanUp;
@@ -269,7 +276,9 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pCred)
 		{
-			wprintf(L"Client %d: malloc failed for pCred, error 0x%08x\n", iIndex, GetLastError());
+			wprintf(L"Client %d: LocalAlloc failed for pCred, error 0x%08x\n", iIndex, GetLastError());
+
+			LogError(GetLastError(), L"LocalAlloc, pCred");
 
 			fAborted = true;
 			
@@ -301,6 +310,8 @@ BOOL ClientConn::Authenticate()
 	{
 		wprintf(L"Client %d: AcquireCredentialsHandle failed: 0x%08x\n", iIndex, ss);
 
+		LogError(ss, L"AcquireCredentialsHandle");
+
 		fAborted = true;
 		
 		goto CleanUp;
@@ -313,7 +324,9 @@ BOOL ClientConn::Authenticate()
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
-		wprintf(L"Client %d: Memory allocation failed.\n", iIndex);
+		wprintf(L"Client %d: malloc failed for pInBuf/pOutBuf, error 0x%08x\n", iIndex, GetLastError());
+
+		LogError(GetLastError(), L"malloc, pInBuf/pOutBuf");
 
 		fAborted = true;
 		
@@ -329,6 +342,8 @@ BOOL ClientConn::Authenticate()
 
 	if (!SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType)))
 	{
+		LogError(GetLastError(), L"SendMsg, MTReady");
+
 		fAborted = true;
 
 		goto CleanUp;
@@ -355,6 +370,10 @@ BOOL ClientConn::Authenticate()
 
 		if (*pInBuf == MTError)
 		{
+			memcpy_s(&ClientError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
+
+			LogError(ClientError, L"(Client-side error)");
+
 			break;
 
 		}
@@ -374,6 +393,9 @@ BOOL ClientConn::Authenticate()
 			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
 
 			*pOutBuf = MTError;
+			
+			memcpy_s(pOutBuf + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
 		}
 		else
 		{
@@ -439,11 +461,15 @@ CleanUp:
 
 	if (fAborted)
 	{
-		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+		//Build Error Message and send to client
+
+		pOutBuf = (PBYTE)malloc(sizeof(MessageType) + sizeof(dwErrorCode));
 
 		*pOutBuf = MTError;
 
-		SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType));
+		memcpy_s(pOutBuf + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
+		SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType) + sizeof(dwErrorCode));
 	}
 
 
@@ -551,6 +577,8 @@ BOOL ClientConn::GenServerContext(
 	{
 		wprintf(L"Client %d: AcceptSecurityContext failed: 0x%08x\n", iIndex, ss);
 
+		LogError(ss, L"AcceptSecurityContext");
+
 		return false;
 	}
 
@@ -564,6 +592,8 @@ BOOL ClientConn::GenServerContext(
 		if (!SEC_SUCCESS(ss))
 		{
 			wprintf(L"Client %d: CompleteAuthToken failed: 0x%08x\n", iIndex, ss);
+
+			LogError(ss, L"CompleteAuthToken");
 
 			return false;
 		}
@@ -717,18 +747,17 @@ BOOL ClientConn::Encrypt(
 	ULONG             SigBufferSize = SecPkgContextSizes.cbSecurityTrailer; //Size of the signature
 
 
-																			//  The format of an encrypted message consists of 3 portions:
-																			//
-																			//  1                                2                  3
-																			//  --------------------------------------------------------------------------
-																			//  | Size of Signature (4 bytes)    | Signature        |  User data         |
-																			//  --------------------------------------------------------------------------
+	//  The format of an encrypted message consists of 3 portions:
+    //
+    //  1                                2                  3
+    //  --------------------------------------------------------------------------
+    //  | Size of Signature (4 bytes)    | Signature        |  User data         |
+    //  --------------------------------------------------------------------------
 
+    //wprintf(L"Client %d: Data before encryption: %s\n", iIndex, pMessage);
+    //wprintf(L"Client %d: Length of data before encryption: %d \n", iIndex, cbMessage);
 
-																			//wprintf(L"Client %d: Data before encryption: %s\n", iIndex, pMessage);
-																			//wprintf(L"Client %d: Length of data before encryption: %d \n", iIndex, cbMessage);
-
-																			//  Allocate a buffer 
+    //  Allocate a buffer 
 	*ppOutput = (PBYTE)malloc(sizeof(DWORD) + SigBufferSize + cbMessage);
 
 	if (!*ppOutput)

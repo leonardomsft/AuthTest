@@ -30,7 +30,7 @@ public:
 	~ClientConn();
 
 	//Error handling
-	LONG	dwErrorCode;
+	DWORD	dwErrorCode;
 	WCHAR	szErrorLocation[255];
 	WCHAR	szErrorMessage[255];
 

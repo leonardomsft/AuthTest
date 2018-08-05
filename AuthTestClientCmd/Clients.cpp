@@ -342,6 +342,7 @@ BOOL ClientConn::Authenticate()
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
 	BOOL			fAborted = false;
+	DWORD			SrvError = 0;
 
 
 	//for credssp
@@ -377,7 +378,7 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSpnegoCred)
 		{
-			LogError(ss, L"malloc, pSpnegoCred");
+			LogError(GetLastError(), L"LocalAlloc, pSpnegoCred");
 
 			fAborted = true;
 
@@ -481,8 +482,12 @@ BOOL ClientConn::Authenticate()
 	//Synchronize with the server. Is server Ready?
 	//
 
-	if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf != MTReady)
+	if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
 	{
+		memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
+
+		LogError(SrvError, L"(Server-side error)");
+
 		goto CleanUp;
 	}
 
@@ -507,15 +512,16 @@ BOOL ClientConn::Authenticate()
 				pkgInfo->cbMaxToken,
 				&cbIn))
 			{
-				//The error has already been captured. Just return.
-
 				break;
 			}
 
 			if (*pInBuf == MTError)
 			{
-				break;
+				memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
+				LogError(SrvError, L"(Server-side error)");
+
+				break;
 			}
 		}
 
@@ -1078,7 +1084,7 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 }// end SecureReceive
 
 
-void ClientConn::LogError(LONG dwError, LPCWSTR pszErrorLocation)
+void ClientConn::LogError(DWORD dwError, LPCWSTR pszErrorLocation)
 {
 	wcscpy_s(szErrorLocation, 255, pszErrorLocation);
 
