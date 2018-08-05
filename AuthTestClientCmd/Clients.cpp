@@ -341,7 +341,7 @@ BOOL ClientConn::Authenticate()
 	DWORD			cbIn = 0;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
-	int				iServerAuthResult = 0;
+	BOOL			fAborted = false;
 
 
 	//for credssp
@@ -358,6 +358,8 @@ BOOL ClientConn::Authenticate()
 	if (!SEC_SUCCESS(ss))
 	{
 		LogError(ss, L"QuerySecurityPackageInfo");
+
+		fAborted = true;
 
 		goto CleanUp;
 	}
@@ -376,6 +378,8 @@ BOOL ClientConn::Authenticate()
 		if (NULL == pSpnegoCred)
 		{
 			LogError(ss, L"malloc, pSpnegoCred");
+
+			fAborted = true;
 
 			goto CleanUp;
 		}
@@ -399,6 +403,8 @@ BOOL ClientConn::Authenticate()
 		{
 			LogError(ss, L"malloc, pSchannelCred");
 
+			fAborted = true;
+
 			goto CleanUp;
 		}
 
@@ -416,6 +422,8 @@ BOOL ClientConn::Authenticate()
 		if (NULL == pCred)
 		{
 			LogError(ss, L"malloc, pCred");
+
+			fAborted = true;
 
 			goto CleanUp;
 		}
@@ -446,6 +454,8 @@ BOOL ClientConn::Authenticate()
 	{
 		LogError(ss, L"AcquireCredentialsHandle");
 
+		fAborted = true;
+
 		goto CleanUp;
 	}
 
@@ -458,6 +468,8 @@ BOOL ClientConn::Authenticate()
 	{
 		LogError(GetLastError(), L"malloc, pInBuf/pOutBuf");
 
+		fAborted = true;
+
 		goto CleanUp;
 	}
 
@@ -465,8 +477,11 @@ BOOL ClientConn::Authenticate()
 	cbOut = pkgInfo->cbMaxToken;
 
 
-	//Synchronize with the server
-	if (!ReceiveAuthResult(&iServerAuthResult) || iServerAuthResult != MTReady)
+	//
+	//Synchronize with the server. Is server Ready?
+	//
+
+	if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf != MTReady)
 	{
 		goto CleanUp;
 	}
@@ -516,6 +531,7 @@ BOOL ClientConn::Authenticate()
 			//The error has already been captured. Just return.
 
 			*pOutBuf = MTError;
+
 		}
 		else
 		{
@@ -545,6 +561,10 @@ BOOL ClientConn::Authenticate()
 
 			break;
 		}
+		if (*pOutBuf == MTError)
+		{
+			break;
+		}
 	}
 
 
@@ -553,11 +573,38 @@ BOOL ClientConn::Authenticate()
 		if (!GetContextInfo())  //Populate szSelectedPackageName
 		{
 			fDone = false;
+
+			goto CleanUp;
 		}
 	}
 
 
+	//For NTLM, wait for confirmation from the server.
+	
+	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
+	{
+
+		if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
+		{
+			fDone = false;
+
+			goto CleanUp;
+		}
+	}
+
+
+
 CleanUp:
+
+	if (fAborted == true)
+	{
+		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+
+		*pOutBuf = MTError;
+
+		SendMsg(s, pOutBuf, sizeof(MessageType));
+	}
+
 
 	if (pInBuf)
 	{
