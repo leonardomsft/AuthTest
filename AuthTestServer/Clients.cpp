@@ -206,7 +206,7 @@ BOOL ClientConn::Authenticate()
 	CredHandle		hcred;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
-	BOOL			fAborted = false;
+	BOOL			fAborted = false; //failures occurred before the loop
 
 	//for credssp
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
@@ -329,6 +329,8 @@ BOOL ClientConn::Authenticate()
 
 	if (!SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType)))
 	{
+		fAborted = true;
+
 		goto CleanUp;
 	}
 	
@@ -414,9 +416,23 @@ BOOL ClientConn::Authenticate()
 		if (!GetContextInfo())  //Populate szSelectedPackageName
 		{
 			fdone = false;
+
+			goto CleanUp;
 		}
 	}
 
+	//For NTLM, inform the client
+
+	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
+	{
+
+		if (!SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType)))
+		{
+			fdone = false;
+
+			goto CleanUp;
+		}
+	}
 
 
 CleanUp:
