@@ -40,6 +40,9 @@ BOOL ClientConn::Initialize()
 		fNewConversation = true;
 	}
 
+	wcscpy_s(szErrorLocation, 255, L"");
+	wcscpy_s(szErrorMessage, 255, L"");
+
 	return true;
 }
 
@@ -211,34 +214,6 @@ BOOL ClientConn::SendPackageName()
 }
 
 
-BOOL ClientConn::ReceiveAuthResult(int * iAuthResult)
-{
-	CHAR RecvBuffer[4] = {};
-
-	int iResult = 0;
-
-	iResult = recv(s, RecvBuffer, sizeof(RecvBuffer), NULL);
-
-	if (iResult < 0)
-	{
-		wprintf(L"Client %d: Connection error: %d.\n", iIndex, GetLastError());
-
-		return false;
-	}
-
-	if (iResult == 0)
-	{
-		wprintf(L"Client %d: Connection gracefully closed.\n", iIndex);
-
-		return false;
-	}
-
-	*iAuthResult = atoi(RecvBuffer);
-
-	return true;
-}
-
-
 
 BOOL ClientConn::GetContextInfo()
 {
@@ -345,7 +320,7 @@ BOOL ClientConn::Authenticate()
 	DWORD			SrvError = 0;
 
 
-	//for credssp
+	//for credssp or Explicit Credentials
 	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
 	PSCHANNEL_CRED				pSchannelCred = NULL;
 	PCREDSSP_CRED				pCred = NULL;
@@ -385,8 +360,6 @@ BOOL ClientConn::Authenticate()
 			goto CleanUp;
 		}
 
-		ZeroMemory(pSpnegoCred, sizeof(SEC_WINNT_AUTH_IDENTITY_W));
-
 		pSpnegoCred->Domain = (unsigned short *)NULL;
 		pSpnegoCred->DomainLength = (unsigned long)0;
 		pSpnegoCred->Password = (unsigned short *)NULL;
@@ -402,14 +375,12 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSchannelCred)
 		{
-			LogError(ss, L"malloc, pSchannelCred");
+			LogError(GetLastError(), L"malloc, pSchannelCred");
 
 			fAborted = true;
 
 			goto CleanUp;
 		}
-
-		ZeroMemory(pSchannelCred, sizeof(SCHANNEL_CRED));
 
 		pSchannelCred->dwVersion = SCHANNEL_CRED_VERSION;
 		pSchannelCred->cCreds = 0;
@@ -422,14 +393,12 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pCred)
 		{
-			LogError(ss, L"malloc, pCred");
+			LogError(GetLastError(), L"malloc, pCred");
 
 			fAborted = true;
 
 			goto CleanUp;
 		}
-
-		ZeroMemory(pCred, sizeof(CREDSSP_CRED));
 
 		pCred->pSpnegoCred = pSpnegoCred;
 		pCred->pSchannelCred = pSchannelCred;
