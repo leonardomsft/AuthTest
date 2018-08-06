@@ -210,33 +210,6 @@ BOOL ClientConn::SendPackageName()
 
 }
 
-BOOL ClientConn::ReceiveAuthResult(int * iAuthResult)
-{
-	CHAR RecvBuffer[4] = {};
-
-	int iResult = 0;
-
-	iResult = recv(s, RecvBuffer, sizeof(RecvBuffer), NULL);
-
-	if (iResult < 0)
-	{
-		wprintf(L"Client %d: Connection error: %d.\n", iIndex, GetLastError());
-
-		return false;
-	}
-
-	if (iResult == 0)
-	{
-		wprintf(L"Client %d: Connection gracefully closed.\n", iIndex);
-
-		return false;
-	}
-
-	*iAuthResult = atoi(RecvBuffer);
-
-	return true;
-}
-
 
 BOOL ClientConn::GetContextInfo()
 {
@@ -340,7 +313,8 @@ BOOL ClientConn::Authenticate()
 	DWORD			cbIn = 0;
 	PBYTE			pInBuf = nullptr;
 	PBYTE			pOutBuf = nullptr;
-	int				iServerAuthResult = 0;
+	BOOL			fAborted = false;
+	DWORD			SrvError = 0;
 
 
 	//for credssp or Explicit Credentials
@@ -358,6 +332,8 @@ BOOL ClientConn::Authenticate()
 	{
 		LogError(ss, L"QuerySecurityPackageInfo");
 
+		fAborted = true;
+
 		goto CleanUp;
 	}
 
@@ -374,7 +350,9 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSpnegoCred)
 		{
-			LogError(ss, L"LocalAlloc, pSpnegoCred");
+			LogError(GetLastError(), L"LocalAlloc, pSpnegoCred");
+
+			fAborted = true;
 
 			goto CleanUp;
 		}
@@ -394,7 +372,9 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSchannelCred)
 		{
-			LogError(ss, L"LocalAlloc, pSchannelCred");
+			LogError(GetLastError(), L"LocalAlloc, pSchannelCred");
+
+			fAborted = true;
 
 			goto CleanUp;
 		}
@@ -410,7 +390,9 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pCred)
 		{
-			LogError(ss, L"LocalAlloc, pCred");
+			LogError(GetLastError(), L"LocalAlloc, pCred");
+
+			fAborted = true;
 
 			goto CleanUp;
 		}
@@ -439,6 +421,8 @@ BOOL ClientConn::Authenticate()
 	{
 		LogError(ss, L"AcquireCredentialsHandle");
 
+		fAborted = true;
+
 		goto CleanUp;
 	}
 
@@ -451,6 +435,8 @@ BOOL ClientConn::Authenticate()
 	{
 		LogError(GetLastError(), L"malloc, pInBuf/pOutBuf");
 
+		fAborted = true;
+
 		goto CleanUp;
 	}
 
@@ -458,11 +444,21 @@ BOOL ClientConn::Authenticate()
 	cbOut = pkgInfo->cbMaxToken;
 
 
-	//Synchronize with the server
-	if (!ReceiveAuthResult(&iServerAuthResult) || iServerAuthResult != MTReady)
+
+	//
+	//Synchronize with the server. Is server Ready?
+	//
+
+	if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
 	{
+
+		memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
+
+		LogError(SrvError, L"(Server-side error)");
+
 		goto CleanUp;
 	}
+
 
 
 	//
@@ -492,8 +488,11 @@ BOOL ClientConn::Authenticate()
 
 			if (*pInBuf == MTError)
 			{
-				break;
+				memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
+				LogError(SrvError, L"(Server-side error)");
+
+				break;
 			}
 
 		}
@@ -538,18 +537,57 @@ BOOL ClientConn::Authenticate()
 
 			break;
 		}
+		if (*pOutBuf == MTError)
+		{
+			break;
+		}
 	}
+
+
 
 	if (fDone)
 	{
 		if (!GetContextInfo())  //Populate szSelectedPackageName
 		{
 			fDone = false;
+
+			goto CleanUp;
+		}
+	}
+
+
+
+	//For NTLM, wait for confirmation from the server.
+
+	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
+	{
+
+		if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
+		{
+
+			memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
+
+			LogError(SrvError, L"(Server-side error)");
+
+			fDone = false;
+
+			goto CleanUp;
 		}
 	}
 
 
 CleanUp:
+
+	if (fAborted == true)
+	{
+
+		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+
+		*pOutBuf = MTError;
+
+		SendMsg(s, pOutBuf, sizeof(MessageType));
+	}
+
 
 	if (pInBuf)
 	{
@@ -1014,7 +1052,7 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 }// end SecureReceive
 
 
-void ClientConn::LogError(LONG dwError, LPCWSTR pszErrorLocation)
+void ClientConn::LogError(DWORD dwError, LPCWSTR pszErrorLocation)
 {
 	wcscpy_s(szErrorLocation, 255, pszErrorLocation);
 

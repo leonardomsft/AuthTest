@@ -54,7 +54,7 @@ private:
 	BOOL ReceiveBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL ReceiveAuthResult(int * iAuthResult);
 
-	void LogError(LONG dwError, LPCWSTR pszErrorLocation);
+	void LogError(DWORD dwError, LPCWSTR pszErrorLocation);
 	void PrintHexDump(DWORD length, PBYTE buffer);
 
 	BOOL GenClientContext(
