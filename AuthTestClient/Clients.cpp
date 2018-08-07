@@ -15,6 +15,8 @@ ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTar
 	wcscpy_s(szPackageName, 40, pszPackageName);
 
 	fNewConversation = true;
+
+	fAuthSuccess = false;
 }
 
 
@@ -32,12 +34,14 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	if (!fNewConversation)
+	if (fAuthSuccess)
 	{
 		DeleteSecurityContext(&hctxt);
-
-		fNewConversation = true;
 	}
+
+	fAuthSuccess = false;
+
+	fNewConversation = true;
 
 	wcscpy_s(szErrorLocation, 255, L"");
 	wcscpy_s(szErrorMessage, 255, L"");
@@ -323,6 +327,8 @@ BOOL ClientConn::Authenticate()
 	PCREDSSP_CRED				pCred = NULL;
 
 
+	fAuthSuccess = false;
+
 	//Validate the Package Name
 	ss = QuerySecurityPackageInfo(
 		szPackageName,
@@ -574,6 +580,9 @@ BOOL ClientConn::Authenticate()
 			goto CleanUp;
 		}
 	}
+
+
+	fAuthSuccess = true;
 
 
 CleanUp:
