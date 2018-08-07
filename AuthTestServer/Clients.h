@@ -11,6 +11,7 @@ public:
 	WCHAR		szPackageName[40];
 	WCHAR		szSelectedPackageName[40];
 	CtxtHandle	hctxt;
+
 	SecPkgContext_NegotiationInfo SecPkgNegInfo;
 	SecPkgContext_PackageInfo SecPackageInfo;
 	SecPkgContext_Sizes SecPkgContextSizes;
@@ -38,8 +39,8 @@ public:
 
 private:
 	BOOL fNewConversation;
+	BOOL fAuthSuccess;
 
-	BOOL SendAuthResult(int intAuthResult);
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);

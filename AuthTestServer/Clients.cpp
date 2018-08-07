@@ -8,6 +8,8 @@
 ClientConn::ClientConn(int i)
 {
 	iIndex = i;
+
+	fAuthSuccess = false;
 }
 
 ClientConn::~ClientConn()
@@ -24,12 +26,17 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	if (!fNewConversation)
+	if (fAuthSuccess)
 	{
 		DeleteSecurityContext(&hctxt);
-
-		fNewConversation = true;
 	}
+	
+	fAuthSuccess = false;
+
+	fNewConversation = true;
+
+	wcscpy_s(szErrorLocation, 255, L"");
+	wcscpy_s(szErrorMessage, 255, L"");
 
 	return true;
 }
@@ -92,34 +99,6 @@ BOOL ClientConn::ReceivePackageName()
 	}
 
 	return true;
-}
-
-BOOL ClientConn::SendAuthResult(int iAuthResult)
-{
-	CHAR SendBuffer[4] = {};
-
-	sprintf_s(SendBuffer, "%d", iAuthResult);
-
-	int iResult = 0;
-
-	iResult = send(Connections[iIndex], SendBuffer, sizeof(iAuthResult), NULL);
-
-	if (iResult < 0)
-	{
-		wprintf(L"Client %d: Connection error: %d.\n", iIndex, GetLastError());
-
-		return false;
-	}
-
-	if (iResult == 0)
-	{
-		wprintf(L"Client %d: Connection gracefully closed.\n", iIndex);
-
-		return false;
-	}
-
-	return true;
-
 }
 
 
@@ -216,6 +195,7 @@ BOOL ClientConn::Authenticate()
 
 
 	fNewConversation = true;
+	fAuthSuccess = false;
 
 	//Validate the Package Name
 	ss = QuerySecurityPackageInfo(
@@ -456,6 +436,8 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
+
+	fAuthSuccess = true;
 
 CleanUp:
 
