@@ -54,6 +54,7 @@ private:
 
 	SOCKET	s;
 	BOOL	fNewConversation;
+	BOOL	fAuthSuccess;
 
 
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
