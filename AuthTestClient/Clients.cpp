@@ -471,7 +471,7 @@ BOOL ClientConn::Authenticate()
 	//client-side loop of InitializeSecurityContext (Server side is AcceptSecurityContext)
 	//
 
-	while (!fDone)
+	while (!fDone && *pOutBuf != MTError)
 	{
 
 		//
@@ -494,6 +494,8 @@ BOOL ClientConn::Authenticate()
 
 			if (*pInBuf == MTError)
 			{
+				//The other side failed. Capture the error and break
+
 				memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
 				LogError(SrvError, L"(Server-side error)");
@@ -512,7 +514,9 @@ BOOL ClientConn::Authenticate()
 			&cbOut,
 			&fDone))
 		{
-			//The error has already been captured. Just return.
+			//Auth failed. Inform the other side.
+
+			memcpy_s(pOutBuf + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
 
 			*pOutBuf = MTError;
 		}
@@ -541,10 +545,6 @@ BOOL ClientConn::Authenticate()
 		{
 			//The error has already been captured. Just return.
 
-			break;
-		}
-		if (*pOutBuf == MTError)
-		{
 			break;
 		}
 	}
