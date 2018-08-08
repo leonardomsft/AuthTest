@@ -9,7 +9,7 @@ ClientConn::ClientConn(int i)
 {
 	iIndex = i;
 
-	fAuthSuccess = false;
+	ValidSecurityContext = false;
 }
 
 ClientConn::~ClientConn()
@@ -26,12 +26,10 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	if (fAuthSuccess)
+	if (ValidSecurityContext)
 	{
 		DeleteSecurityContext(&hctxt);
 	}
-	
-	fAuthSuccess = false;
 
 	fNewConversation = true;
 
@@ -194,8 +192,6 @@ BOOL ClientConn::Authenticate()
 	PCREDSSP_CRED				pCred = NULL;
 
 
-	fNewConversation = true;
-	fAuthSuccess = false;
 
 	//Validate the Package Name
 	ss = QuerySecurityPackageInfo(
@@ -335,7 +331,7 @@ BOOL ClientConn::Authenticate()
 	//Server-side loop of AcceptSecurityContext (client side is InitializeSecurityContext)
 	//
 
-	while (!fdone)
+	while (!fdone && *pOutBuf != MTError)
 	{
 		if (!ReceiveMsg(
 			Connections[iIndex],
@@ -350,6 +346,8 @@ BOOL ClientConn::Authenticate()
 
 		if (*pInBuf == MTError)
 		{
+			//The other side failed. Capture the error and break.
+
 			memcpy_s(&ClientError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
 			LogError(ClientError, L"(Client-side error)");
@@ -370,7 +368,7 @@ BOOL ClientConn::Authenticate()
 			&hcred,
 			&hctxt))
 		{
-			wprintf(L"Client %d: GenServerContext failed.\n", iIndex);
+			//We Failed. Inform the other side.
 
 			*pOutBuf = MTError;
 			
@@ -406,11 +404,7 @@ BOOL ClientConn::Authenticate()
 			break;
 		}
 
-		if (*pOutBuf == MTError)
-		{
-			break;
-		}
-	}
+	} //loop
 
 
 	if (fdone)
@@ -436,8 +430,6 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
-
-	fAuthSuccess = true;
 
 CleanUp:
 
@@ -563,6 +555,8 @@ BOOL ClientConn::GenServerContext(
 
 		return false;
 	}
+
+	ValidSecurityContext = true;
 
 	//----------------------------------------------------------------
 	//  Complete token if applicable.

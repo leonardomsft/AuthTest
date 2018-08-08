@@ -39,7 +39,7 @@ public:
 
 private:
 	BOOL fNewConversation;
-	BOOL fAuthSuccess;
+	BOOL ValidSecurityContext;
 
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
