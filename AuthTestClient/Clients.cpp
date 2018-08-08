@@ -14,9 +14,7 @@ ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTar
 
 	wcscpy_s(szPackageName, 40, pszPackageName);
 
-	fNewConversation = true;
-
-	fAuthSuccess = false;
+	ValidSecurityContext = false;
 }
 
 
@@ -34,12 +32,10 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	if (fAuthSuccess)
+	if (ValidSecurityContext)
 	{
 		DeleteSecurityContext(&hctxt);
 	}
-
-	fAuthSuccess = false;
 
 	fNewConversation = true;
 
@@ -327,8 +323,6 @@ BOOL ClientConn::Authenticate()
 	PCREDSSP_CRED				pCred = NULL;
 
 
-	fAuthSuccess = false;
-
 	//Validate the Package Name
 	ss = QuerySecurityPackageInfo(
 		szPackageName,
@@ -582,19 +576,21 @@ BOOL ClientConn::Authenticate()
 	}
 
 
-	fAuthSuccess = true;
-
-
+	
 CleanUp:
 
 	if (fAborted == true)
 	{
 
-		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
-		*pOutBuf = MTError;
+		BYTE MessageType = MTError;
 
-		SendMsg(s, pOutBuf, sizeof(MessageType));
+		memcpy_s(Buffer, sizeof(MessageType), &MessageType, sizeof(MessageType));
+
+		memcpy_s(Buffer + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
+		SendMsg(s, Buffer, sizeof(Buffer));
 	}
 
 
@@ -696,6 +692,8 @@ BOOL ClientConn::GenClientContext(
 
 		return false;
 	}
+
+	ValidSecurityContext = true;
 
 	//
 	//  If necessary, complete the token.
