@@ -571,8 +571,6 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
-	fAuthSuccess = true;
-
 
 CleanUp:
 
