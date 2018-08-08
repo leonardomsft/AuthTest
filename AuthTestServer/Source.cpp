@@ -262,7 +262,8 @@ BOOL ClientHandlerThread(int index)
 
 		if (!pclient->Authenticate())
 		{
-			wprintf(L"Client %d: Authentication Failed. Aborting.\n", index);
+			wprintf(L"Client %d: Test Failed. Error 0x%08x at Authenticate -> %s.\n", index, pclient->dwErrorCode, pclient->szErrorLocation);
+			wprintf(L"Client %d: %s.\n", index, pclient->szErrorMessage);
 
 			continue;
 		}
