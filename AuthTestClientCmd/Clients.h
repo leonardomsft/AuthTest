@@ -54,14 +54,13 @@ private:
 
 	SOCKET	s;
 	BOOL	fNewConversation;
-	BOOL	fAuthSuccess;
+	BOOL	ValidSecurityContext;
 
 
 	BOOL SendMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
-	BOOL ReceiveAuthResult(int * iAuthResult);
 
 	void LogError(DWORD dwError, LPCWSTR pszErrorLocation);
 

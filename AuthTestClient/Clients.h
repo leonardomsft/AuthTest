@@ -34,7 +34,7 @@ public:
 	SecPkgContext_Sizes				SecPkgContextSizes;
 
 	//Error handling
-	LONG	dwErrorCode;
+	DWORD	dwErrorCode;
 	WCHAR	szErrorLocation[255];
 	WCHAR	szErrorMessage[255];
 
@@ -53,7 +53,6 @@ private:
 	BOOL ReceiveMsg(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
 	BOOL SendBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf);
 	BOOL ReceiveBytes(SOCKET s, PBYTE pBuf, DWORD cbBuf, DWORD *pcbRead);
-	BOOL ReceiveAuthResult(int * iAuthResult);
 
 	void LogError(DWORD dwError, LPCWSTR pszErrorLocation);
 	void PrintHexDump(DWORD length, PBYTE buffer);

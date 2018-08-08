@@ -15,9 +15,7 @@ ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTar
 
 	wcscpy_s(szPackageName, 40, pszPackageName);
 
-	fNewConversation = true;
-
-	fAuthSuccess = false;
+	ValidSecurityContext = false;
 }
 
 
@@ -35,12 +33,10 @@ ClientConn::~ClientConn()
 BOOL ClientConn::Initialize()
 {
 
-	if (fAuthSuccess)
+	if (ValidSecurityContext)
 	{
 		DeleteSecurityContext(&hctxt);
 	}
-
-	fAuthSuccess = false;
 
 	fNewConversation = true;
 
@@ -118,7 +114,7 @@ BOOL ClientConn::Connect()
 		return false;
 	}
 
-	wprintf(L"Client %d: Destination %s resolved to %s\n", iIndex, szServerName, szResolvedIP);
+	wprintf(L"%s resolved to %s\n", szServerName, szResolvedIP);
 
 
 	// Create socket 
@@ -132,7 +128,7 @@ BOOL ClientConn::Connect()
 		return false;
 
 	}
-	//wprintf(L"socket succeed.\n");
+	wprintf(L"socket succeed.\n");
 
 
 	// Connect
@@ -141,8 +137,6 @@ BOOL ClientConn::Connect()
 
 	if (iResult == SOCKET_ERROR)
 	{
-		//Failed. cleanup and return.
-
 		LogError(WSAGetLastError(), L"WSAConnect");
 
 		closesocket(s);
@@ -329,7 +323,6 @@ BOOL ClientConn::Authenticate()
 	PSCHANNEL_CRED				pSchannelCred = NULL;
 	PCREDSSP_CRED				pCred = NULL;
 
-	fAuthSuccess = false;
 
 	//Validate the Package Name
 	ss = QuerySecurityPackageInfo(
@@ -380,7 +373,7 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pSchannelCred)
 		{
-			LogError(GetLastError(), L"malloc, pSchannelCred");
+			LogError(GetLastError(), L"LocalAlloc, pSchannelCred");
 
 			fAborted = true;
 
@@ -398,7 +391,7 @@ BOOL ClientConn::Authenticate()
 
 		if (NULL == pCred)
 		{
-			LogError(GetLastError(), L"malloc, pCred");
+			LogError(GetLastError(), L"LocalAlloc, pCred");
 
 			fAborted = true;
 
@@ -470,7 +463,7 @@ BOOL ClientConn::Authenticate()
 	//client-side loop of InitializeSecurityContext (Server side is AcceptSecurityContext)
 	//
 
-	while (!fDone)
+	while (!fDone && *pOutBuf != MTError)
 	{
 
 		//
@@ -486,17 +479,22 @@ BOOL ClientConn::Authenticate()
 				pkgInfo->cbMaxToken,
 				&cbIn))
 			{
+				//The error has already been captured. Just return.
+
 				break;
 			}
 
 			if (*pInBuf == MTError)
 			{
+				//The other side failed. Capture the error and break
+
 				memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
 				LogError(SrvError, L"(Server-side error)");
 
 				break;
 			}
+
 		}
 
 		cbOut = pkgInfo->cbMaxToken;
@@ -508,10 +506,11 @@ BOOL ClientConn::Authenticate()
 			&cbOut,
 			&fDone))
 		{
-			//The error has already been captured. Just return.
+			//Auth failed. Inform the other side.
+
+			memcpy_s(pOutBuf + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
 
 			*pOutBuf = MTError;
-
 		}
 		else
 		{
@@ -529,7 +528,6 @@ BOOL ClientConn::Authenticate()
 			break;
 		}
 
-
 		fNewConversation = false;
 
 		if (!SendMsg(
@@ -539,10 +537,6 @@ BOOL ClientConn::Authenticate()
 		{
 			//The error has already been captured. Just return.
 
-			break;
-		}
-		if (*pOutBuf == MTError)
-		{
 			break;
 		}
 	}
@@ -584,11 +578,15 @@ CleanUp:
 
 	if (fAborted == true)
 	{
-		pOutBuf = (PBYTE)malloc(sizeof(MessageType));
+		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
-		*pOutBuf = MTError;
+		BYTE MessageType = MTError;
 
-		SendMsg(s, pOutBuf, sizeof(MessageType));
+		memcpy_s(Buffer, sizeof(MessageType), &MessageType, sizeof(MessageType));
+
+		memcpy_s(Buffer + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
+		SendMsg(s, Buffer, sizeof(Buffer));
 	}
 
 
@@ -680,6 +678,7 @@ BOOL ClientConn::GenClientContext(
 		&ContextAttributes,
 		&Lifetime);
 
+	ValidSecurityContext = true;
 
 
 	if (!SEC_SUCCESS(ss))

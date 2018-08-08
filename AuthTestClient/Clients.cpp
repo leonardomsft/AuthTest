@@ -428,8 +428,8 @@ BOOL ClientConn::Authenticate()
 
 
 	//Allocate in and out buffers
-	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
-	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken);
+	pInBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
+	pOutBuf = (PBYTE)malloc(pkgInfo->cbMaxToken + sizeof(MessageType));
 
 	if (NULL == pInBuf || NULL == pOutBuf)
 	{
@@ -684,7 +684,7 @@ BOOL ClientConn::GenClientContext(
 		&ContextAttributes,
 		&Lifetime);
 
-
+	ValidSecurityContext = true;
 
 	if (!SEC_SUCCESS(ss))
 	{
@@ -692,8 +692,6 @@ BOOL ClientConn::GenClientContext(
 
 		return false;
 	}
-
-	ValidSecurityContext = true;
 
 	//
 	//  If necessary, complete the token.
