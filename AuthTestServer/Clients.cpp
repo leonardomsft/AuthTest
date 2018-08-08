@@ -417,7 +417,7 @@ BOOL ClientConn::Authenticate()
 		}
 	}
 
-	//For NTLM, inform the client
+	//For NTLM, inform the results to client
 
 	if (!_wcsicmp(szSelectedPackageName, L"NTLM"))
 	{
@@ -437,13 +437,16 @@ CleanUp:
 	{
 		//Build Error Message and send to client
 
-		pOutBuf = (PBYTE)malloc(sizeof(MessageType) + sizeof(dwErrorCode));
+		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
-		*pOutBuf = MTError;
+		BYTE MessageType = MTError;
 
-		memcpy_s(pOutBuf + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+		memcpy_s(Buffer, sizeof(MessageType), &MessageType, sizeof(MessageType));
 
-		SendMsg(Connections[iIndex], pOutBuf, sizeof(MessageType) + sizeof(dwErrorCode));
+		memcpy_s(Buffer + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
+		SendMsg(Connections[iIndex], Buffer, sizeof(Buffer));
+
 	}
 
 
