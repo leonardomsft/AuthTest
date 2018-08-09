@@ -340,7 +340,7 @@ BOOL ClientConn::Authenticate()
 
 
 	//
-	//  If Implicit
+	//  If Explicit or CredSSP
 	//
 
 	if (true)

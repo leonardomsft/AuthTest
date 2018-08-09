@@ -2,7 +2,7 @@
 #include "Clients.h"
 
 
-ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTargetName, LPWSTR pszPackageName)
+ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTargetName, LPWSTR pszPackageName, BOOL bExplicitCred,  LPWSTR pszUsername, LPWSTR pszPassword, LPWSTR pszDomain)
 {
 	iIndex = i;
 
@@ -13,6 +13,17 @@ ClientConn::ClientConn(int i, LPWSTR pszServerName, int iDestPort, LPWSTR pszTar
 	wcscpy_s(szTargetName, 255, pszTargetName);
 
 	wcscpy_s(szPackageName, 40, pszPackageName);
+
+	ExplicitCred = bExplicitCred;
+
+	if (bExplicitCred)
+	{
+		wcscpy_s(szUsername, 80, pszUsername);
+
+		wcscpy_s(szPassword, 80, pszPassword);
+
+		wcscpy_s(szDomain, 80, pszDomain);
+	}
 
 	ValidSecurityContext = false;
 }
@@ -318,9 +329,9 @@ BOOL ClientConn::Authenticate()
 
 
 	//for credssp or Explicit Credentials
-	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = NULL;
-	PSCHANNEL_CRED				pSchannelCred = NULL;
-	PCREDSSP_CRED				pCred = NULL;
+	PSEC_WINNT_AUTH_IDENTITY_W	pSpnegoCred = nullptr;
+	PSCHANNEL_CRED				pSchannelCred = nullptr;
+	PCREDSSP_CRED				pCred = nullptr;
 
 
 	//Validate the Package Name
@@ -337,16 +348,15 @@ BOOL ClientConn::Authenticate()
 		goto CleanUp;
 	}
 
+
 	//
-	//Additional steps if CredSSP
+	//  If Explicit or CredSSP
 	//
 
-	if (!_wcsicmp(pkgInfo->Name, L"CredSSP"))
+	if (ExplicitCred || !_wcsicmp(pkgInfo->Name, L"CredSSP"))
 	{
-
-		//1. Build SPNEGO cred structure
-
 		pSpnegoCred = (PSEC_WINNT_AUTH_IDENTITY_W)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(SEC_WINNT_AUTH_IDENTITY_W));
+
 
 		if (NULL == pSpnegoCred)
 		{
@@ -357,16 +367,25 @@ BOOL ClientConn::Authenticate()
 			goto CleanUp;
 		}
 
-		pSpnegoCred->Domain = (unsigned short *)NULL;
-		pSpnegoCred->DomainLength = (unsigned long)0;
-		pSpnegoCred->Password = (unsigned short *)NULL;
-		pSpnegoCred->PasswordLength = (unsigned long)0;
-		pSpnegoCred->User = (unsigned short *)NULL;
-		pSpnegoCred->UserLength = (unsigned long)0;
+		pSpnegoCred->User = ExplicitCred ? (unsigned short *)szUsername : NULL ;
+		pSpnegoCred->UserLength = ExplicitCred ? (unsigned long)wcslen(szUsername) : 0;
+		pSpnegoCred->Password = ExplicitCred ? (unsigned short *)szPassword : NULL;
+		pSpnegoCred->PasswordLength = ExplicitCred ? (unsigned long)wcslen(szPassword) : 0;
+		pSpnegoCred->Domain = ExplicitCred ? (unsigned short *)szDomain : NULL;
+		pSpnegoCred->DomainLength = ExplicitCred ? (unsigned long)wcslen(szDomain) : 0;
 		pSpnegoCred->Flags = SEC_WINNT_AUTH_IDENTITY_UNICODE;
+	}
 
 
-		//2. Build Schannel cred structure
+
+	//
+	//Additional steps if CredSSP
+	//
+
+	if (!_wcsicmp(pkgInfo->Name, L"CredSSP"))
+	{
+
+		//1. Build Schannel cred structure
 
 		pSchannelCred = (PSCHANNEL_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(SCHANNEL_CRED));
 
@@ -384,7 +403,7 @@ BOOL ClientConn::Authenticate()
 		pSchannelCred->paCred = NULL;
 
 
-		//3. Build CREDSSP cred structure
+		//2. Build CREDSSP cred structure
 
 		pCred = (PCREDSSP_CRED)LocalAlloc(LMEM_FIXED | LMEM_ZEROINIT, sizeof(CREDSSP_CRED));
 
@@ -397,21 +416,23 @@ BOOL ClientConn::Authenticate()
 			goto CleanUp;
 		}
 
+		//3. Bind pSpnegoCred and pSchannelCred in pCred
+
 		pCred->pSpnegoCred = pSpnegoCred;
 		pCred->pSchannelCred = pSchannelCred;
 
 
-	}//if credssp
+	}  //if credssp
 
 
-	//Acquire Credentials
+	   //Acquire Credentials
 
 	ss = AcquireCredentialsHandle(
 		NULL,
 		szPackageName,
 		SECPKG_CRED_OUTBOUND,
 		NULL,
-		(PVOID)pCred,	//pAuthData 
+		pCred ? (PVOID)pCred : (PVOID)pSpnegoCred, //pAuthData 
 		NULL,
 		NULL,
 		&hCred,
@@ -444,21 +465,18 @@ BOOL ClientConn::Authenticate()
 	cbOut = pkgInfo->cbMaxToken;
 
 
-
 	//
 	//Synchronize with the server. Is server Ready?
 	//
 
 	if (!ReceiveMsg(s, pInBuf, pkgInfo->cbMaxToken, &cbIn) || *pInBuf == MTError)
 	{
-
 		memcpy_s(&SrvError, sizeof(dwErrorCode), pInBuf + sizeof(MessageType), sizeof(dwErrorCode));
 
 		LogError(SrvError, L"(Server-side error)");
 
 		goto CleanUp;
 	}
-
 
 
 	//
@@ -544,7 +562,6 @@ BOOL ClientConn::Authenticate()
 	}
 
 
-
 	if (fDone)
 	{
 		if (!GetContextInfo())  //Populate szSelectedPackageName
@@ -554,7 +571,6 @@ BOOL ClientConn::Authenticate()
 			goto CleanUp;
 		}
 	}
-
 
 
 	//For NTLM, wait for confirmation from the server.
@@ -576,12 +592,10 @@ BOOL ClientConn::Authenticate()
 	}
 
 
-	
 CleanUp:
 
 	if (fAborted == true)
 	{
-
 		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
 		BYTE MessageType = MTError;
@@ -604,18 +618,18 @@ CleanUp:
 		free(pOutBuf);
 	}
 
+	if (pSpnegoCred)
+	{
+		LocalFree(pSpnegoCred);
+	}
+
+
 	if (pCred)
 	{
 
 		if (pCred->pSchannelCred)
 		{
 			LocalFree(pCred->pSchannelCred);
-		}
-
-
-		if (pCred->pSpnegoCred)
-		{
-			LocalFree(pCred->pSpnegoCred);
 		}
 
 		LocalFree(pCred);

@@ -9,11 +9,15 @@ public:
 	WCHAR	szTargetName[255];
 	WCHAR	szPackageName[40];
 
+	BOOL	ExplicitCred;
+	WCHAR	szUsername[80];
+	WCHAR	szPassword[80];
+	WCHAR	szDomain[80];
+
 	WCHAR	szSelectedPackageName[40];
 	WCHAR	szEncryptAlgorithmName[40];
 	int		KeySize;
 	WCHAR	szSignatureAlgorithmName[40];
-
 
 	BOOL Initialize();
 	BOOL Connect();
@@ -38,7 +42,7 @@ public:
 	WCHAR	szErrorLocation[255];
 	WCHAR	szErrorMessage[255];
 
-	ClientConn(int i, LPWSTR szServerName, int iDestPort, LPWSTR szTargetName, LPWSTR szPackageName);
+	ClientConn(int i, LPWSTR szServerName, int iDestPort, LPWSTR szTargetName, LPWSTR szPackageName, BOOL bExplicitCred, LPWSTR pszUsername, LPWSTR pszPassword, LPWSTR pszDomain);
 	~ClientConn();
 
 
