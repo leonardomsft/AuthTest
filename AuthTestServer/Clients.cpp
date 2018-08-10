@@ -437,15 +437,15 @@ CleanUp:
 	{
 		//Build Error Message and send to client
 
-		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
+		BYTE tempBuffer[sizeof(MessageType) + sizeof(dwErrorCode) ];
 
 		BYTE MessageType = MTError;
 
-		memcpy_s(Buffer, sizeof(MessageType), &MessageType, sizeof(MessageType));
+		memcpy_s(tempBuffer, sizeof(tempBuffer), &MessageType, sizeof(MessageType));
 
-		memcpy_s(Buffer + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+		memcpy_s(tempBuffer + sizeof(MessageType), sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
 
-		SendMsg(Connections[iIndex], Buffer, sizeof(Buffer));
+		SendMsg(Connections[iIndex], tempBuffer, sizeof(tempBuffer));
 
 	}
 

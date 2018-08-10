@@ -596,15 +596,17 @@ CleanUp:
 
 	if (fAborted == true)
 	{
-		BYTE Buffer[sizeof(MessageType) + sizeof(dwErrorCode)];
+		//Build Error Message and send to client
+
+		BYTE tempBuffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
 		BYTE MessageType = MTError;
 
-		memcpy_s(Buffer, sizeof(MessageType), &MessageType, sizeof(MessageType));
+		memcpy_s(tempBuffer, sizeof(tempBuffer), &MessageType, sizeof(MessageType));
 
-		memcpy_s(Buffer + sizeof(MessageType), sizeof(MessageType) + sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+		memcpy_s(tempBuffer + sizeof(MessageType), sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
 
-		SendMsg(s, Buffer, sizeof(Buffer));
+		SendMsg(s, tempBuffer, sizeof(tempBuffer));
 	}
 
 
