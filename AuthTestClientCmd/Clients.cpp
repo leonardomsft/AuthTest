@@ -648,7 +648,7 @@ BOOL ClientConn::GenClientContext(
 	SecBuffer			OutSecBuff;
 	SecBufferDesc		InBuffDesc;
 	SecBuffer			InSecBuff;
-	ULONG				ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION;
+	ULONG				ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_MUTUAL_AUTH;
 
 
 	//
