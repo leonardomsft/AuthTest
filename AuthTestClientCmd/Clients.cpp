@@ -648,9 +648,17 @@ BOOL ClientConn::GenClientContext(
 	SecBuffer			OutSecBuff;
 	SecBufferDesc		InBuffDesc;
 	SecBuffer			InSecBuff;
-	ULONG				ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_MUTUAL_AUTH;
+	ULONG				ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION;
 
 
+	// Require Mutual Auth for all packages, except CredSSP
+
+	if (_wcsicmp(pkgInfo->Name, L"CredSSP"))
+	{
+		ContextAttributes += ASC_REQ_MUTUAL_AUTH;
+	}
+	
+	
 	//
 	//  Prepare Out buffer.
 	//
