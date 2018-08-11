@@ -8,20 +8,20 @@ AuthTest is a two-part tool consisting of a server and a client. The server runs
 
 Launch the client and specify the test parameters:
 
-**Server name or IP:** The destination computer running AuthTestServer.exe. 
-**TCP Port:** The TCP port in which the server is listening to.
-**Target or SPN:** SPN, UPN, or SamAccountName used to run AuthTestServer.exe.
-**Package:** The authentication package to be used: Negotiate, Kerberos, NTLM, or CredSSP.
+- **Server name or IP:** The destination computer running AuthTestServer.exe. 
+- **TCP Port:** The TCP port in which the server is listening to.
+- **Target or SPN:** SPN, UPN, or SamAccountName used to run AuthTestServer.exe.
+- **Package:** The authentication package to be used: Negotiate, Kerberos, NTLM, or CredSSP.
 
 Credentials:
 
-**Implicit:** Use the credentials of the current user (account used to launch AuthTestClient.exe)
-**Explicit:** Specify different credentials
+- **Implicit:** Use the credentials of the current user (account used to launch AuthTestClient.exe)
+- **Explicit:** Specify different credentials
 
 Test Type:
 
-**Basic:** Tests authentication only.
-**Advanced:** Tests authentication, impersonation, and encryption.
+- **Basic:** Tests authentication only.
+- **Advanced:** Tests authentication, impersonation, and encryption.
 
 
 ![Alt text](Fig1.png?raw=true "Figure1")
@@ -44,7 +44,7 @@ SSPI offers a variety of authentication packages:
 
 Negotiate is the most widely used authentication package in the Windows Patform. Negotiate is not an authentication protocol in itself, it analyzes the parameters and selects the most secure protocol available to perform the authentication. 
 
-It first checks if Kerberos can be used by analyzing the Target name provided. If a Target is not specified, or contains an SPN, UPN, or SamAccountName that cannot be found in Active Directory, NTLM is used.
+It first checks if Kerberos can be used by analyzing the Target name provided. If a Target is not specified, or contains a target that cannot be uniquely found in Active Directory, NTLM is used.
 
 ### Kerberos
 
@@ -71,8 +71,16 @@ NTLM is most commonly used between computers not joined to a domain, or as a fal
 
 ### CredSSP
 
-CredSSP (Credential Security Support Provider) is
+CredSSP (Credential Security Support Provider) is mostly used in unconstrained delegation scenarios, providing a secure way to pass the user credentials to the server. CredSSP establishes a TLS (Transport Layer Security) tunnel between the client and the server, then uses the Negotiate package for authentication (which selects either Kerberos or NTLM). 
+
+The server can then use the client's credentials to initiate another round of authentication to a second destination, process known as Second-Hop authentication. CredSSP is used in RDS (Remote Desktop Services), WinRM (Windows Remote Management), Remote PowerShell, Hyper-V Live Migration, etc.
 
 ## Scenarios
+
+AuthTest can test a variety of authentication scenarios, including inter-domain, non-domain joined, cross-forest, and special accounts. AuthTest can also run in stress test mode.
+
+### Inter-domain
+
+In this scenario, both the client and the server belong to the same domain
 
 
