@@ -267,7 +267,7 @@ BOOL ClientHandlerThread(int index)
 
 			continue;
 		}
-		wprintf(L"Client %d: Authentication Success!\n", index);
+		wprintf(L"Client %d: Authentication success.\n", index);
 
 
 		//
@@ -289,7 +289,7 @@ BOOL ClientHandlerThread(int index)
 
 		if (TestType == Basic)
 		{
-			wprintf(L"Client %d: Basic test completed successfully!\n", index);
+			wprintf(L"Client %d: Basic test completed successfully.\n", index);
 			
 			continue;
 		}
@@ -305,7 +305,6 @@ BOOL ClientHandlerThread(int index)
 
 			continue;
 		}
-		wprintf(L"Client %d: Package MaxSignature size: %d, SecurityTrailer size: %d\n", index, pclient->SecPkgContextSizes.cbMaxSignature, pclient->SecPkgContextSizes.cbSecurityTrailer);
 
 
 		//
@@ -318,7 +317,7 @@ BOOL ClientHandlerThread(int index)
 
 			continue;
 		}
-		wprintf(L"Client %d: Impersonation test success!\n", index);
+		wprintf(L"Client %d: Impersonation test success.\n", index);
 
 
 		//
@@ -334,9 +333,9 @@ BOOL ClientHandlerThread(int index)
 
 			continue;
 		}
-		wprintf(L"Client %d: Encryption test succeess!\n", index);
+		wprintf(L"Client %d: Encryption test succeess.\n", index);
 
-		wprintf(L"Client %d: Advanced test completed successfully!\n", index);
+		wprintf(L"Client %d: Advanced test completed successfully.\n", index);
 
 
 	}//loop

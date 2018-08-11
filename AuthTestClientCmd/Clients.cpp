@@ -114,9 +114,7 @@ BOOL ClientConn::Connect()
 		return false;
 	}
 
-	wprintf(L"%s resolved to %s\n", szServerName, szResolvedIP);
-
-
+	
 	// Create socket 
 
 	s = WSASocket(AddrInfo->ai_family, AddrInfo->ai_socktype, AddrInfo->ai_protocol, NULL, NULL, NULL);
@@ -128,7 +126,7 @@ BOOL ClientConn::Connect()
 		return false;
 
 	}
-	wprintf(L"socket succeed.\n");
+	
 
 
 	// Connect
@@ -146,7 +144,7 @@ BOOL ClientConn::Connect()
 
 		return false;
 	}
-	//wprintf(L"WSAConnect succeed.\n");
+	
 
 	//Success. Cleanup
 
@@ -1072,7 +1070,8 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 		return false;
 	}
 
-	wprintf(L"%d encrypted bytes received \n", cbBytesReceived);
+
+	//call Decrypt
 
 	DecryptedData = Decrypt(
 		EncryptedData,

@@ -276,7 +276,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 		goto cleanup;
 	}
-	wprintf(L"Client %d: Authentication Success!\n", Param->iIndex);
+	wprintf(L"Client %d: Authentication Success.\n", Param->iIndex);
 
 
 
@@ -302,7 +302,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 	if (TestType == Basic)
 	{
-		wprintf(L"Client %d: Basic test completed successfully!\n", Param->iIndex);
+		wprintf(L"Client %d: Basic test completed successfully.\n", Param->iIndex);
 
 		goto cleanup;
 	}
@@ -320,9 +320,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 		goto cleanup;
 	}
-	wprintf(L"Client %d: GetContextSizes success\n", Param->iIndex);
-
-
+	
 
 	//
 	//Receive an encrypted message from the server.
@@ -336,7 +334,7 @@ BOOL ClientHandlerThread(LPVOID _param)
 
 		goto cleanup;
 	}
-	wprintf(L"Client %d: SecureReceive succeess! Message: %s\n", Param->iIndex, pMessage);
+	wprintf(L"Client %d: SecureReceive succeess. Decrypted message: %s\n", Param->iIndex, pMessage);
 
 
 	//
@@ -353,11 +351,11 @@ BOOL ClientHandlerThread(LPVOID _param)
 	}
 	else
 	{
-		wprintf(L"Client %d: Impersonation and Encryption success!\n", Param->iIndex);
+		wprintf(L"Client %d: Impersonation and Encryption success.\n", Param->iIndex);
 	}
 
 
-	wprintf(L"Client %d: Advanced test completed successfully!\n", Param->iIndex);
+	wprintf(L"Client %d: Advanced test completed successfully.\n", Param->iIndex);
 
 
 cleanup:

@@ -635,7 +635,6 @@ BOOL ClientConn::ImpersonateClient()
 		return false;
 
 	}
-
 	wprintf(L"Client %d: Client connected as : %s\n", iIndex, szUserName);
 
 
@@ -846,7 +845,7 @@ BOOL ClientConn::SendMsg(
 		return false;
 	}
 
-	return(TRUE);
+	return true;
 } // end SendMsg    
 
 BOOL ClientConn::ReceiveMsg(
@@ -894,7 +893,7 @@ BOOL ClientConn::ReceiveMsg(
 
 	*pcbRead = cbRead;
 
-	return(TRUE);
+	return true;
 }  // end ReceiveMsg    
 
 BOOL ClientConn::SendBytes(
