@@ -666,7 +666,7 @@ BOOL ClientConn::GenClientContext(
 
 	if (_wcsicmp(pkgInfo->Name, L"CredSSP"))
 	{
-		ContextAttributes =+ ASC_REQ_MUTUAL_AUTH;
+		ContextAttributes += ASC_REQ_MUTUAL_AUTH;
 	}
 
 
