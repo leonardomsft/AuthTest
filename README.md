@@ -24,14 +24,14 @@ Test Type:
 - **Advanced:** Tests authentication, impersonation, and encryption.
 
 
-![Alt text](Fig1.png?raw=true "Figure1")
+![Alt text](Image1.png?raw=true "Image1")
 
 
 ## Server
 
 Use the sever to start listening for client connections:
 
-![Alt text](Fig2.png?raw=true "Figure2")
+![Alt text](Image2.png?raw=true "Image2")
 
 
 ## Authentication basics
@@ -77,10 +77,10 @@ The server can then use the client's credentials to initiate another round of au
 
 ## Scenarios
 
-AuthTest can test a variety of authentication scenarios, including inter-domain, non-domain joined, cross-forest, and special accounts. AuthTest can also run in stress test mode.
+AuthTest can test a variety of authentication scenarios, including intra-domain, no trust/non-domain joined, cross-forest, and special accounts. AuthTest can also perform stress test.
 
-### Inter-domain
+### Intra-domain
 
-In this scenario, both the client and the server belong to the same domain
+In this scenario, both the client and the server belong to the same domain.
 
 
