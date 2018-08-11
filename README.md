@@ -2,11 +2,27 @@
 
 AuthTest is an authentication test tool for testing the various authentication methods & protocols available in the Windows Operating System.
 
-AuthTest is a two-part tool consisting of a server and a client. The server runs on the destination computer and waits for client connections. The client runs on the source machine and receives all the authentication parameters. The client connects to the server and runs the desired test.
+AuthTest is a two-part tool consisting of a server and a client. The server runs on the destination computer and receives client connections. The client runs on the source machine and connects to the server to run the desired test.
 
 ## Client
 
-Use the client to specify the test parameters:
+Launch the client and specify the test parameters:
+
+**Server name or IP:** The destination computer running AuthTestServer.exe. 
+**TCP Port:** The TCP port in which the server is listening to.
+**Target or SPN:** SPN, UPN, or SamAccountName used to run AuthTestServer.exe.
+**Package:** The authentication package to be used: Negotiate, Kerberos, NTLM, or CredSSP.
+
+Credentials:
+
+**Implicit:** Use the credentials of the current user (account used to launch AuthTestClient.exe)
+**Explicit:** Specify different credentials
+
+Test Type:
+
+**Basic:** Tests authentication only.
+**Advanced:** Tests authentication, impersonation, and encryption.
+
 
 ![Alt text](Fig1.png?raw=true "Figure1")
 
@@ -28,7 +44,7 @@ SSPI offers a variety of authentication packages:
 
 Negotiate is the most widely used authentication package in the Windows Patform. Negotiate is not an authentication protocol in itself, it analyzes the parameters and selects the most secure protocol available to perform the authentication. 
 
-It first checks if Kerberos can be used by analyzing the Target name provided. If a Target is not specified, or contains an SPN, UPN, or AccountName that cannot be found in Active Directory, NTLM is used.
+It first checks if Kerberos can be used by analyzing the Target name provided. If a Target is not specified, or contains an SPN, UPN, or SamAccountName that cannot be found in Active Directory, NTLM is used.
 
 ### Kerberos
 
@@ -45,9 +61,9 @@ NTLM is most commonly used between computers not joined to a domain, or as a fal
 
 1. The client sends the Username in plaintext to the server.
 2. The server generates a 16-byte random number called challenge or NONCE, and sends it to the client.
-3. The client generates a unicode uppercase version of the username, and concatenates it to the unicode target (domain name if the machine is domain joined, server name otherwise).
+3. The client generates a unicode uppercase version of the username, and concatenates it to the unicode domain name (if the machine is domain-joined) or server name (if not domain-joined).
 4. HMAC-MD5 is applied to this value using the NT hash of user's password as a key. This results in 128 bit output known as the NTLMv2 hash.
-5. The client then generates its own 64 bits challenge by concatenating a timestamp, some target information, and the server challenge.
+5. The client then generates its own 16-byte challenge by concatenating a timestamp, some target information, and the server challenge.
 6. HMAC-MD5 is applied to this value using the NTLMv2 hash as a key (obtained in step 4). This results in 128 bit output, called NTLMv2 Response, which is sent to the server.
 9. The Server sends the username, the original challenge, and the NTLMv2 response to the domain controller.
 10. The domain controller repeats the same steps the client did and compare the results. If they match, the DC confirms the authentication to the server.
