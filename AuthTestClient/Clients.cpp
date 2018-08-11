@@ -1033,6 +1033,8 @@ PBYTE ClientConn::Decrypt(
 
 BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 {
+	DWORD			SrvError = 0;
+
 	//allocate a buffer
 	PBYTE EncryptedData = (PBYTE)malloc(cbMessage);
 
@@ -1043,7 +1045,7 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 		return false;
 	}
 
-	PBYTE	DecryptedData;  //will be set to an offset into EncryptedData by Decrypt function
+	PBYTE	DecryptedData = nullptr;  //will be set to an offset into EncryptedData by Decrypt function
 	DWORD	cbBytesReceived = 0;
 	DWORD	cbEncryptedData = cbMessage;
 
@@ -1056,6 +1058,17 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 	{
 		//the error has already been captured. Just return.
 
+		return NULL;
+	}
+
+	if (EncryptedData[0] == MTError)
+	{
+		//Capture error and return
+
+		memcpy_s(&SrvError, sizeof(dwErrorCode), EncryptedData + sizeof(MessageType), sizeof(dwErrorCode));
+
+		LogError(SrvError, L"(Server-side error)");
+
 		return false;
 	}
 
@@ -1064,6 +1077,11 @@ BOOL ClientConn::SecureReceive(LPWSTR pMessage, DWORD cbMessage)
 	DecryptedData = Decrypt(
 		EncryptedData,
 		&cbBytesReceived);
+
+	if (DecryptedData == NULL)
+	{
+		return false;
+	}
 
 	memcpy_s(pMessage, cbMessage, (PBYTE)DecryptedData, cbBytesReceived);
 
