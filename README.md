@@ -50,7 +50,7 @@ NTLM is most commonly used between computers not joined to a domain, or as a fal
 5. The client then generates its own 64 bits challenge by concatenating a timestamp, some target information, and the server challenge.
 6. HMAC-MD5 is applied to this value using the NTLMv2 hash as a key (obtained in step 4). This results in 128 bit output, called NTLMv2 Response, which is sent to the server.
 9. The Server sends the username, the original challenge, and the NTLMv2 response to the domain controller.
-10. The domain controller repeats the same process the client did and compare the results. If they match, the DC confirms the authentication to the server.
+10. The domain controller repeats the same steps the client did and compare the results. If they match, the DC confirms the authentication to the server.
 11. The server informs the client whether the authentication succeeded or failed. This occurs outside SSPI.
 
 ### CredSSP
