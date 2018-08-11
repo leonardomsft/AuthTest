@@ -509,7 +509,10 @@ BOOL ClientConn::GenServerContext(
 	SecBuffer         OutSecBuff;
 	SecBufferDesc     InBuffDesc;
 	SecBuffer         InSecBuff;
-	ULONG             ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION | ASC_REQ_MUTUAL_AUTH;
+	ULONG             ContextAttributes = ASC_REQ_CONFIDENTIALITY | ASC_REQ_DELEGATE | ASC_REQ_CONNECTION ;
+
+
+
 
 
 	//----------------------------------------------------------------
@@ -680,15 +683,26 @@ BOOL ClientConn::SecureSend(LPWSTR pMessage, DWORD cbMessage)
 	//size of the data
 	DWORD cbEncryptedData = 0;
 
-	Encrypt(
+	if (!Encrypt(
 		(PBYTE)pMessage,	//pointer to the message to encrypt
 		cbMessage,			//size in bytes of all wide characters in pMessage, excluding the null terminator
 		&pEncryptedMessage,	//local pointer to receive the output (an offset in pMessage)
-		&cbEncryptedData);	//local int to receive the count of bytes of the output
+		&cbEncryptedData))  //local int to receive the count of bytes of the output
+	{
+		//Encryption failed. Build an Error Message and send to client
 
-							//-----------------------------------------------------------------   
-							//  Send the encrypted data to client.
+		BYTE tempBuffer[sizeof(MessageType) + sizeof(dwErrorCode)];
 
+		BYTE MessageType = MTError;
+
+		memcpy_s(tempBuffer, sizeof(tempBuffer), &MessageType, sizeof(MessageType));
+
+		memcpy_s(tempBuffer + sizeof(MessageType), sizeof(dwErrorCode), &dwErrorCode, sizeof(dwErrorCode));
+
+		SendMsg(Connections[iIndex], tempBuffer, sizeof(tempBuffer));
+	}
+
+	//  Send the encrypted message to the client.
 
 	if (!SendMsg(
 		Connections[iIndex],
@@ -699,6 +713,8 @@ BOOL ClientConn::SecureSend(LPWSTR pMessage, DWORD cbMessage)
 
 		return false;
 	}
+
+
 
 	if (pEncryptedMessage)
 		free(pEncryptedMessage);
@@ -775,7 +791,10 @@ BOOL ClientConn::Encrypt(
 	if (!SEC_SUCCESS(ss))
 	{
 		wprintf(L"Client %d: EncryptMessage failed: 0x%08x\n", iIndex, ss);
-		return(FALSE);
+
+		LogError(ss, L"EncryptMessage");
+
+		return false;
 	}
 
 
