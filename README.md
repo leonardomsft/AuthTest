@@ -31,7 +31,9 @@ Test Type:
 
 Launch the sever on the destination computer to start listening for client connections:
 
-AuthTestServer.exe <address>:<port>
+Syntax:
+
+AuthTestServer.exe (address):(port)
 
 ![Alt text](img2.png?raw=true "Image2")
 
@@ -85,9 +87,11 @@ AuthTest can test a variety of authentication scenarios, including domain-joined
 
 ### Example 1: Negotiate to Kerberos
 
-In this scenario, the client specifies target "Cindy", which uniquely matches a SamAccountName for a user account in Active Directory, so the Negotiate package selects Kerberos. Since this is the account under which the server is running, the authentication completes successfully:
+In this scenario, the client specifies target "Cindy", which uniquely matches a SamAccountName for a user account in Active Directory, so the Negotiate package selects Kerberos:
 
 ![Alt text](img3.png?raw=true "Image3")
+
+Since "Cindy" is the account under which the server is running, the authentication completes successfully:
 
 ![Alt text](img4.png?raw=true "Image4")
 
@@ -105,6 +109,10 @@ Because the client is non domain-joined, the Negotiate package selects NTLM. Aft
 
 Authtest can test the authentication of services running under special accounts, such as "NT AUTHORITY\Network Service" or "LocalSystem". Use PsExec (Sysinternals) to launch the command-line version of the client **AuthTestClientCmd.exe** :
 
+Syntax:
+
+AuthTestClientCmd.exe -s (server) -p (port) -t (target) -a (package)
+
 ![Alt text](img7.png?raw=true "Image7")
 
 ### Example 4: Stress test
@@ -114,6 +122,8 @@ AuthTest can test the performance of backend services by producing repeated auth
 **WARNING:** Stress test can impose severe stress on domain controllers. Use with caution.
 
 ![Alt text](img8.png?raw=true "Image8")
+
+### Download
 
 
 
