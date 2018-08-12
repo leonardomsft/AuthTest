@@ -35,8 +35,6 @@ AuthTestServer.exe <address>:<port>
 
 ![Alt text](img2.png?raw=true "Image2")
 
-![Alt text](img2.png)
-
 
 ## Authentication overview
 
@@ -72,8 +70,8 @@ NTLM is most commonly used between computers not joined to a domain, or as a fal
 5. The client then generates its own 16-byte challenge by concatenating a timestamp, some target information, and the server challenge.
 6. HMAC-MD5 is applied to this value using the NTLMv2 hash as a key (obtained in step 4). This results in 128 bit output, called NTLMv2 Response, which is sent to the server.
 9. The Server sends the username, the original challenge, and the NTLMv2 response to the domain controller.
-10. The domain controller repeats the same steps the client did and compare the results. If they match, the DC confirms the authentication to the server.
-11. The server informs the client whether the authentication succeeded or failed. This occurs outside SSPI.
+10. The domain controller repeats the same steps as the client and compare the results. If they match, the DC confirms the authentication to the server.
+11. Finally, the server informs the client whether the authentication succeeded or failed. This occurs outside SSPI.
 
 ### CredSSP
 
@@ -87,12 +85,11 @@ AuthTest can test a variety of authentication scenarios, including domain-joined
 
 ### Example 1: Negotiate to Kerberos
 
-In this scenario, the client specifies target "Cindy", which uniquely maps to the user account running the server, so the Negotiate package selects Kerberos and the authentication completes successfully:
+In this scenario, the client specifies target "Cindy", which uniquely matches a SamAccountName for a user account in Active Directory, so the Negotiate package selects Kerberos. Since this is the account under which the server is running, the authentication completes successfully:
 
 ![Alt text](img3.png?raw=true "Image3")
 
 ![Alt text](img4.png?raw=true "Image4")
-
 
 ### Example 2: CredSSP over NTLM
 
@@ -100,13 +97,13 @@ In this scenario, a non domain-joined client attempts CredSSP against a domain-j
 
 ![Alt text](img5.png?raw=true "Image5")
 
-Because the client is non domain-joined, the Negotiate package selects NTLM and authentication completes successfully:
+Because the client is non domain-joined, the Negotiate package selects NTLM. After the server verifies client's explicit credentials with a domain controller, the authentication completes successfully:
 
 ![Alt text](img6.png?raw=true "Image6")
 
 ### Example 3: Special accounts
 
-Authtest can test the authentication of services running under special accounts, such as "NT AUTHORITY\Network Service" or "LocalSystem". For this use PsExec (Sysinternals) and the command-line version of the client **AuthTestClientCmd.exe** :
+Authtest can test the authentication of services running under special accounts, such as "NT AUTHORITY\Network Service" or "LocalSystem". Use PsExec (Sysinternals) to launch the command-line version of the client **AuthTestClientCmd.exe** :
 
 ![Alt text](img7.png?raw=true "Image7")
 
@@ -116,6 +113,7 @@ AuthTest can test the performance of backend services by producing repeated auth
 
 **WARNING:** Stress test can impose severe stress on domain controllers. Use with caution.
 
+![Alt text](img8.png?raw=true "Image8")
 
 
 
