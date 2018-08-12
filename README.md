@@ -1,8 +1,8 @@
 # AuthTest
 
-AuthTest is an authentication test tool for testing the various authentication methods & protocols available in the Windows Operating System.
+AuthTest is a tool for testing the various authentication methods & protocols available in the Windows Operating System.
 
-AuthTest is a two-part tool consisting of a server and a client. The server runs on the destination computer and receives client connections. The client runs on the source machine and connects to the server to run the desired test.
+AuthTest is a two-part tool consisting of a server and a client. The server runs on the destination computer and receives client connections. The client runs on the source computer and connects to the server to run the desired test.
 
 ## Client
 
@@ -29,12 +29,16 @@ Test Type:
 
 ## Server
 
-Use the sever to start listening for client connections:
+Launch the sever on the destination computer to start listening for client connections:
+
+AuthTestServer.exe <address>:<port>
 
 ![Alt text](Image2.png?raw=true "Image2")
 
 
-## Authentication basics
+## Authentication overview
+
+Authentication is the process of confirming the identity of a client to a server, and optionally, a server to a client (mutual authentication).
 
 Authentication on Windows is performed through SSPI (Security Support Provider Interface), a set of APIs that conveniently abstracts all the complexities of security-related operations and exposes a standard interface for user-mode and kernel-mode applications.
 
@@ -42,7 +46,7 @@ SSPI offers a variety of authentication packages:
 
 ### Negotiate
 
-Negotiate is the most widely used authentication package in the Windows Patform. Negotiate is not an authentication protocol in itself, it analyzes the parameters and selects the most secure protocol available to perform the authentication. 
+Negotiate is the most widely used authentication package in the Windows Patform. Negotiate is not an authentication protocol in itself, it simply analyzes the parameters and selects the most secure protocol available to perform the authentication.
 
 It first checks if Kerberos can be used by analyzing the Target name provided. If a Target is not specified, or contains a target that cannot be uniquely found in Active Directory, NTLM is used.
 
@@ -75,12 +79,36 @@ CredSSP (Credential Security Support Provider) is mostly used in unconstrained d
 
 The server can then use the client's credentials to initiate another round of authentication to a second destination, process known as Second-Hop authentication. CredSSP is used in RDS (Remote Desktop Services), WinRM (Windows Remote Management), Remote PowerShell, Hyper-V Live Migration, etc.
 
-## Scenarios
+## Example Scenarios
 
-AuthTest can test a variety of authentication scenarios, including intra-domain, no trust/non-domain joined, cross-forest, and special accounts. AuthTest can also perform stress test.
+AuthTest can test a variety of authentication scenarios, including domain-joined, non domain-joined/no trust, and special accounts. AuthTest can also perform stress test.
 
-### Intra-domain
+### Scenario 1: Negotiate to Kerberos
 
-In this scenario, both the client and the server belong to the same domain.
+In this scenario, the client specifies target "Cindy", which uniquely maps to the user account running the server, so the Negotiate package selects Kerberos and the authentication completes successfully:
+
+![Alt text](Image3.png?raw=true "Image3")
+
+![Alt text](Image4.png?raw=true "Image4")
+
+
+### Scenario 2: CredSSP over NTLM
+
+In this scenario, a non domain-joined client attempts CredSSP against a domain-joined computer. In order to establish a TLS tunnel, the server creates a self-signed certificate in the computer store:
+
+![Alt text](Image5.png?raw=true "Image5")
+
+Because the client is non domain-joined, the Negotiate package falls back to NTLM and the authentication completes successfully:
+
+![Alt text](Image6.png?raw=true "Image6")
+
+### Scenario 3: Special accounts
+
+### Stress test
+
+
+
+
+
 
 
