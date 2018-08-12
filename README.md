@@ -81,11 +81,11 @@ CredSSP (Credential Security Support Provider) is mostly used in unconstrained d
 
 The server can then use the client's credentials to initiate another round of authentication to a second destination, process known as Second-Hop authentication. CredSSP is used in RDS (Remote Desktop Services), WinRM (Windows Remote Management), Remote PowerShell, Hyper-V Live Migration, etc.
 
-## Example Scenarios
+## Scenarios
 
 AuthTest can test a variety of authentication scenarios, including domain-joined, non domain-joined/no trust, and special accounts. AuthTest can also perform stress test.
 
-### Scenario 1: Negotiate to Kerberos
+### Example 1: Negotiate to Kerberos
 
 In this scenario, the client specifies target "Cindy", which uniquely maps to the user account running the server, so the Negotiate package selects Kerberos and the authentication completes successfully:
 
@@ -94,19 +94,29 @@ In this scenario, the client specifies target "Cindy", which uniquely maps to th
 ![Alt text](img4.png?raw=true "Image4")
 
 
-### Scenario 2: CredSSP over NTLM
+### Example 2: CredSSP over NTLM
 
 In this scenario, a non domain-joined client attempts CredSSP against a domain-joined computer. In order to establish a TLS tunnel, the server creates a self-signed certificate in the computer store:
 
 ![Alt text](img5.png?raw=true "Image5")
 
-Because the client is non domain-joined, the Negotiate package falls back to NTLM and the authentication completes successfully:
+Because the client is non domain-joined, the Negotiate package selects NTLM and authentication completes successfully:
 
 ![Alt text](img6.png?raw=true "Image6")
 
-### Scenario 3: Special accounts
+### Example 3: Special accounts
 
-### Stress test
+Authtest can test the authentication of services running under special accounts, such as "NT AUTHORITY\Network Service" or "LocalSystem". For this use PsExec (Sysinternals) and the command-line version of the client **AuthTestClientCmd.exe** :
+
+![Alt text](img7.png?raw=true "Image7")
+
+### Example 4: Stress test
+
+AuthTest can test the performance of backend services by producing repeated authentication requests in a loop. 
+
+**WARNING:** Stress test can impose severe stress on domain controllers. Use with caution.
+
+
 
 
 
