@@ -24,7 +24,7 @@ Test Type:
 - **Advanced:** Tests authentication, impersonation, and encryption.
 
 
-![Alt text](Image1.png?raw=true "Image1")
+![Alt text](img1.png?raw=true "Image1")
 
 
 ## Server
@@ -33,7 +33,9 @@ Launch the sever on the destination computer to start listening for client conne
 
 AuthTestServer.exe <address>:<port>
 
-![Alt text](Image2.png?raw=true "Image2")
+![Alt text](img2.png?raw=true "Image2")
+
+![Alt text](img2.png)
 
 
 ## Authentication overview
@@ -87,20 +89,20 @@ AuthTest can test a variety of authentication scenarios, including domain-joined
 
 In this scenario, the client specifies target "Cindy", which uniquely maps to the user account running the server, so the Negotiate package selects Kerberos and the authentication completes successfully:
 
-![Alt text](Image3.png?raw=true "Image3")
+![Alt text](img3.png?raw=true "Image3")
 
-![Alt text](Image4.png?raw=true "Image4")
+![Alt text](img4.png?raw=true "Image4")
 
 
 ### Scenario 2: CredSSP over NTLM
 
 In this scenario, a non domain-joined client attempts CredSSP against a domain-joined computer. In order to establish a TLS tunnel, the server creates a self-signed certificate in the computer store:
 
-![Alt text](Image5.png?raw=true "Image5")
+![Alt text](img5.png?raw=true "Image5")
 
 Because the client is non domain-joined, the Negotiate package falls back to NTLM and the authentication completes successfully:
 
-![Alt text](Image6.png?raw=true "Image6")
+![Alt text](img6.png?raw=true "Image6")
 
 ### Scenario 3: Special accounts
 
