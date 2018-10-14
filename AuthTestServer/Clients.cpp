@@ -3,8 +3,6 @@
 #include "Clients.h"
 #include "Header.h"
 
-//#define SEC_SUCCESS(Status) ((Status) >= 0)
-
 ClientConn::ClientConn(int i)
 {
 	iIndex = i;
