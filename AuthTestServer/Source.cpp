@@ -209,8 +209,7 @@ int wmain(int argc, WCHAR * argv[])
 
 BOOL ClientHandlerThread(int index)
 {
-
-	ClientConn * pclient = new ClientConn(index);
+	std::unique_ptr<ClientConn> pclient(new ClientConn(index));
 
 	WCHAR pMessage[200] = {};
 	int cbpMessage = sizeof(pMessage);
@@ -238,7 +237,7 @@ BOOL ClientHandlerThread(int index)
 		{
 			wprintf(L"Client %d: A TestType was not received. Aborting.\n", index);
 
-			goto cleanup;
+			break;
 		}
 		wprintf(L"Client %d: TestType requested: %s\n", index, szTestType[TestType]);
 
@@ -251,7 +250,7 @@ BOOL ClientHandlerThread(int index)
 		{
 			wprintf(L"Client %d: Error receiving PackageName. Aborting.\n", index);
 
-			goto cleanup;
+			break;
 		}
 		wprintf(L"Client %d: Package requested: %s\n", index, pclient->szPackageName);
 
@@ -340,12 +339,6 @@ BOOL ClientHandlerThread(int index)
 
 	}//loop
 
-
-
-cleanup:
-
-	if (pclient)
-		delete pclient;
 
 	return true;
 
