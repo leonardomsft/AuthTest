@@ -126,13 +126,10 @@ AuthTest can test the performance of backend services by producing repeated auth
 ### Download
 
 
-[AuthTestClient.exe](https://github.com/leonardomsft/AuthTest/releases/download/v0.9/AuthTestClient.exe)
+[AuthTestClient.exe](https://github.com/leonardomsft/AuthTest/releases/download/1.0/AuthTestClient.exe)
 
-[AuthTestServer.exe](https://github.com/leonardomsft/AuthTest/releases/download/v0.9/AuthTestServer.exe)
+[AuthTestServer.exe](https://github.com/leonardomsft/AuthTest/releases/download/1.0/AuthTestServer.exe)
 
-[AuthTestClientCmd.exe](https://github.com/leonardomsft/AuthTest/releases/download/v0.9/AuthTestClientCmd.exe)
-
-
-
+[AuthTestServer.exe](https://github.com/leonardomsft/AuthTest/releases/download/1.0/AuthTestClientCmd.exe)
 
 
